@@ -1,0 +1,32 @@
+==== Qualpay for WooCommerce ====
+
+2018-05-16 2.0.6
+* Fixed check for 'testmode' was looking at 'debug' and always returning the sandbox URL.
+
+2018-04-18 2.0.5
+* Added developer_id
+* Fixed issue with request response
+
+2018-04-04 2.0.4
+* Added Subscription Product Price format when using an existing plan
+* Fixed Response Code that is filled with rcode or code.
+* Added setting for Custom CSS
+* Custom CSS is now sent with request for Embedded Fields
+
+2018-03-23 2.0.3
+* Fixed Merchant ID blank setting
+* Removed CVV setting
+
+2018-03-14 2.0.2
+* Fixed Auth/Capture process.
+* Updated Plan Duration to be 0 instead of -1.
+* Updated API setting to link to documentation.
+
+2018-03-12 2.0.1
+* Updates to plans
+
+2018-03-09 2.0.0
+* Testing release
+
+2018-01-15 1.0.0
+* First release

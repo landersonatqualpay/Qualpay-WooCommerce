@@ -9,7 +9,7 @@
  * Domain Path:     /languages
  * Version:         3.0.2
  * WC requires at least: 2.6.14
- * WC tested up to: 3.4.3
+ * WC tested up to: 3.5.0
  * WP tested up to 4.9.7
  * Wp Requires at least : 4.4.0
  * @package         Qualpay

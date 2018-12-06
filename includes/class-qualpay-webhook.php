@@ -210,8 +210,8 @@ class QualPay_Webhook {
                         $env_name = "test";
                         if( file_exists($iniFilename) ) {
                             $props = parse_ini_file ($iniFilename);
-                            if( !empty($props[host]) ) {
-								$env_name = $props[host];
+                            if( !empty($props['host']) ) {
+								$env_name = $props['host'];
 								$env_name = strtoupper($env_name);
                             }
                         }

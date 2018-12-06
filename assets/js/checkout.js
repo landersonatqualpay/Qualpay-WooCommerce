@@ -5,7 +5,7 @@
     var token_used = false;
     function qualpay_load_embedded( form_id, form, token ) {
         token = token || qualpay.transient_key;
-        
+
         qpEmbeddedForm.loadFrame(
             parseInt( qualpay.merchant_id ),
             {
@@ -26,7 +26,9 @@
                     if( error.detail ) {
                         for( var key in error.detail ) {
                             console.log( error.detail[key] );
-                            alert('There was an issue processing your transaction.  Please check the card details and try again.' );
+                            alert(error.detail[key]);
+                            return false;
+                            //alert('There was an issue processing your transaction.  Please check the card details and try again.' );
                         }
                     }
                 }
@@ -35,156 +37,185 @@
     
         function preSubmit()
         {
-            var billing_first_name  = $('#billing_first_name').val();
-            var billing_last_name   = $('#billing_last_name').val();
-            var billing_country     = $('#billing_country').val();
-            var billing_address_1   = $('#billing_address_1').val();
-            var billing_city        = $('#billing_city').val();
-            var billing_state       = $('#billing_state').val();
-            var billing_postcode    = $('#billing_postcode').val();
-            var billing_phone       = $('#billing_phone').val();
-            var billing_email       = $('#billing_email').val();
-            var account_username    = $('#account_username').val();
-            var account_password    = $('#account_password').val();
-           //  var name_regex = '/^[a-zA-Z]+$/';
-            var email_regex = /^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$/;
-          //  var add_regex = '/^[0-9a-zA-Z]+$/';
-            var zip_regex = /(^\d{5}$)|(^\d{5}-\d{4}$)/;
-            var phone_regex = /^[0-9\-\(\)\s]+/;
+            var url      = window.location.href; 
+            var matches = url.match(/\/order-pay\/(.*)$/);
             
-            if (billing_first_name.length == 0) {
-                alert("First name is mandatory"); 
-                $('.wpmc-step-payment').removeClass('current');
-                $('.wpmc-step-billing').addClass('current');
-                $('#wpmc-prev').removeClass('current');
-                $('#wpmc-next').addClass('current');
-                $("#billing_first_name").focus();
-                return false;
-            }
-            else if (billing_last_name.length == 0) {
-                alert("Last name is mandatory"); 
-                $('.wpmc-step-payment').removeClass('current');
-                $('.wpmc-step-billing').addClass('current');
-                $('#wpmc-prev').removeClass('current');
-                $('#wpmc-next').addClass('current');
-                $("#billing_last_name").focus();
-                return false;
-            }
-            else if (billing_country.length == 0) {
-                alert("Country is mandatory"); 
-                $('.wpmc-step-payment').removeClass('current');
-                $('.wpmc-step-billing').addClass('current');
-                $('#wpmc-prev').removeClass('current');
-                $('#wpmc-next').addClass('current');
-                $("#billing_country").focus();
-                return false;
-            }
-            else if (billing_address_1.length == 0) {
-                alert("Street Address is mandatory"); 
-                $('.wpmc-step-payment').removeClass('current');
-                $('.wpmc-step-billing').addClass('current');
-                $('#wpmc-prev').removeClass('current');
-                $('#wpmc-next').addClass('current');
-                $("#billing_address_1").focus();
-                return false;
-            }
-            else if (billing_city.length == 0) {
-                alert("City is mandatory"); 
-                $('.wpmc-step-payment').removeClass('current');
-                $('.wpmc-step-billing').addClass('current');
-                $('#wpmc-prev').removeClass('current');
-                $('#wpmc-next').addClass('current');
-                $("#billing_city").focus();
-                return false;
-            }
-            else if (billing_state.length == 0) {
-                alert("State is mandatory"); 
-                $('.wpmc-step-payment').removeClass('current');
-                $('.wpmc-step-billing').addClass('current');
-                $('#wpmc-prev').removeClass('current');
-                $('#wpmc-next').addClass('current');
-                $("#billing_state").focus();
-                return false;
-            }
-            else if (billing_postcode.length == 0) {
-                alert("Zip code is mandatory");
-                $('.wpmc-step-payment').removeClass('current');
-                $('.wpmc-step-billing').addClass('current');
-                $('#wpmc-prev').removeClass('current');
-                $('#wpmc-next').addClass('current');
-                $("#billing_postcode").focus();
-                return false;
-            }
-            else if (!billing_postcode.match(zip_regex) || billing_postcode.length == 0 ) {
-                alert("Please enter a valid zip code "); 
-                $('.wpmc-step-payment').removeClass('current');
-                $('.wpmc-step-billing').addClass('current');
-                $('#wpmc-prev').removeClass('current');
-                $('#wpmc-next').addClass('current');
-                $("#billing_postcode").focus();
-                return false;
-            }
-            else if (billing_phone.length == 0) {
-                alert("Phone number is mandatory"); 
-                $('.wpmc-step-payment').removeClass('current');
-                $('.wpmc-step-billing').addClass('current');
-                $('#wpmc-prev').removeClass('current');
-                $('#wpmc-next').addClass('current');
-                $("#billing_phone").focus();
-                return false;
-            }
-            else if (!billing_phone.match(phone_regex) || billing_phone.length == 0 ) {
-                alert("Please enter a valid Phone number "); 
-                $('.wpmc-step-payment').removeClass('current');
-                $('.wpmc-step-billing').addClass('current');
-                $('#wpmc-prev').removeClass('current');
-                $('#wpmc-next').addClass('current');
-                $("#billing_phone").focus();
-                return false;
-            }
-            else if (billing_email.length == 0) {
-                alert("Email address is mandatory"); 
-                $('.wpmc-step-payment').removeClass('current');
-                $('.wpmc-step-billing').addClass('current');
-                $('#wpmc-prev').removeClass('current');
-                $('#wpmc-next').addClass('current');
-                $("#billing_email").focus();
-                return false;
-            }
-           else if (!billing_email.match(email_regex) || billing_email.length == 0 ) {
-                alert("Please enter a valid Email address "); 
-                $('.wpmc-step-payment').removeClass('current');
-                $('.wpmc-step-billing').addClass('current');
-                $('#wpmc-prev').removeClass('current');
-                $('#wpmc-next').addClass('current');
-                $("#billing_email").focus();
-                return false;
-            }
-          
-            else if ($('input[name="createaccount"]:checked').length > 0) {
-                if (account_username.length == 0) {
-                    alert("Username is mandatory"); 
+            if (!matches) {
+                var billing_first_name  = $('#billing_first_name');
+                var billing_last_name   = $('#billing_last_name');
+                var billing_country     = $('#billing_country');
+                var billing_address_1   = $('#billing_address_1');
+                var billing_city        = $('#billing_city');
+                var billing_state       = $('#billing_state');
+                var billing_postcode    = $('#billing_postcode');
+                var billing_phone       = $('#billing_phone');
+                var billing_email       = $('#billing_email');
+                var account_username    = $('#account_username');
+                var account_password    = $('#account_password');
+                
+            //  var name_regex = '/^[a-zA-Z]+$/';
+                var email_regex = /^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$/;
+            //  var add_regex = '/^[0-9a-zA-Z]+$/';
+                var zip_regex = /(^\d{5}$)|(^\d{5}-\d{4}$)/;
+                var phone_regex = /^[0-9\-\(\)\s]+/;
+                //alert(typeof billing_first_name);
+                if ((typeof billing_first_name !== 'undefined') && (billing_first_name.val() == "")) {
+                    alert("First name is mandatory"); 
                     $('.wpmc-step-payment').removeClass('current');
                     $('.wpmc-step-billing').addClass('current');
                     $('#wpmc-prev').removeClass('current');
                     $('#wpmc-next').addClass('current');
-                    $("#account_username").focus();
+                    $("#billing_first_name").focus();
                     return false;
                 }
-                else if (account_password.length == 0) {
-                    alert("Password is mandatory"); 
+                else if ((typeof billing_last_name !== 'undefined') && billing_last_name.val() == "") {
+                    alert("Last name is mandatory"); 
                     $('.wpmc-step-payment').removeClass('current');
                     $('.wpmc-step-billing').addClass('current');
                     $('#wpmc-prev').removeClass('current');
                     $('#wpmc-next').addClass('current');
-                    $("#account_password").focus();
+                    $("#billing_last_name").focus();
                     return false;
                 }
-            }
-            else {
-                return true;
-            }
+                else if ((typeof billing_country !== 'undefined') && billing_country.val() == "") {
+                    alert("Country is mandatory"); 
+                    $('.wpmc-step-payment').removeClass('current');
+                    $('.wpmc-step-billing').addClass('current');
+                    $('#wpmc-prev').removeClass('current');
+                    $('#wpmc-next').addClass('current');
+                    $("#billing_country").focus();
+                    return false;
+                }
+                else if ((typeof billing_address_1 !== 'undefined') && billing_address_1.val() == "") {
+                    alert("Street Address is mandatory"); 
+                    $('.wpmc-step-payment').removeClass('current');
+                    $('.wpmc-step-billing').addClass('current');
+                    $('#wpmc-prev').removeClass('current');
+                    $('#wpmc-next').addClass('current');
+                    $("#billing_address_1").focus();
+                    return false;
+                }
+                else if ((typeof billing_city !== 'undefined') && billing_city.val() == "") {
+                    alert("City is mandatory"); 
+                    $('.wpmc-step-payment').removeClass('current');
+                    $('.wpmc-step-billing').addClass('current');
+                    $('#wpmc-prev').removeClass('current');
+                    $('#wpmc-next').addClass('current');
+                    $("#billing_city").focus();
+                    return false;
+                }
+                else if ((typeof billing_state !== 'undefined') && billing_state.val() == "") {
+                    alert("State is mandatory"); 
+                    $('.wpmc-step-payment').removeClass('current');
+                    $('.wpmc-step-billing').addClass('current');
+                    $('#wpmc-prev').removeClass('current');
+                    $('#wpmc-next').addClass('current');
+                    $("#billing_state").focus();
+                    return false;
+                }
+                else if ((typeof billing_postcode !== 'undefined') && billing_postcode.val()== "") {
+                        alert("Zip code is mandatory");
+                        $('.wpmc-step-payment').removeClass('current');
+                        $('.wpmc-step-billing').addClass('current');
+                        $('#wpmc-prev').removeClass('current');
+                        $('#wpmc-next').addClass('current');
+                        $("#billing_postcode").focus();
+                        return false;
+                }
+                else if(billing_postcode.val() != "" && !billing_postcode.val().match(zip_regex)) {
+                        alert("Please enter a valid zip code "); 
+                        $('.wpmc-step-payment').removeClass('current');
+                        $('.wpmc-step-billing').addClass('current');
+                        $('#wpmc-prev').removeClass('current');
+                        $('#wpmc-next').addClass('current');
+                        $("#billing_postcode").focus();
+                        return false;
+                    } 
+                else if ((typeof billing_phone !== 'undefined') && billing_phone.val() == "") {
+                    alert("Phone number is mandatory"); 
+                    $('.wpmc-step-payment').removeClass('current');
+                    $('.wpmc-step-billing').addClass('current');
+                    $('#wpmc-prev').removeClass('current');
+                    $('#wpmc-next').addClass('current');
+                    $("#billing_phone").focus();
+                    return false;
+                }
+                else if (billing_phone.val() != "" && (!billing_phone.val().match(phone_regex) )) {
+                    alert("Please enter a valid Phone number "); 
+                    $('.wpmc-step-payment').removeClass('current');
+                    $('.wpmc-step-billing').addClass('current');
+                    $('#wpmc-prev').removeClass('current');
+                    $('#wpmc-next').addClass('current');
+                    $("#billing_phone").focus();
+                    return false;
+                }
+                else if ((typeof billing_email !== 'undefined') && billing_email.val() == "") {
+                    alert("Email address is mandatory"); 
+                    $('.wpmc-step-payment').removeClass('current');
+                    $('.wpmc-step-billing').addClass('current');
+                    $('#wpmc-prev').removeClass('current');
+                    $('#wpmc-next').addClass('current');
+                    $("#billing_email").focus();
+                    return false;
+                }
+                else if (billing_email.val() != "" && (!billing_email.val().match(email_regex))) {
+                    alert("Please enter a valid Email address "); 
+                    $('.wpmc-step-payment').removeClass('current');
+                    $('.wpmc-step-billing').addClass('current');
+                    $('#wpmc-prev').removeClass('current');
+                    $('#wpmc-next').addClass('current');
+                    $("#billing_email").focus();
+                    return false;
+                }
             
+                    else if ($('input[name="createaccount"]:checked').length > 0) {
+                        if ((typeof account_username !== 'undefined') && account_username.val() == "") {
+                            alert("Username is mandatory"); 
+                            $('.wpmc-step-payment').removeClass('current');
+                            $('.wpmc-step-billing').addClass('current');
+                            $('#wpmc-prev').removeClass('current');
+                            $('#wpmc-next').addClass('current');
+                            $("#account_username").focus();
+                            return false;
+                        }
+                        else if ((typeof account_password !== 'undefined') && account_password.val() == "") {
+                            alert("Password is mandatory"); 
+                            $('.wpmc-step-payment').removeClass('current');
+                            $('.wpmc-step-billing').addClass('current');
+                            $('#wpmc-prev').removeClass('current');
+                            $('#wpmc-next').addClass('current');
+                            $("#account_password").focus();
+                            return false;
+                        }
+                }
+                else if( $('#terms').is(":visible")){
+                    if(!($('#terms').is(':checked'))) {
+                        alert("Please Select Read terms and conditions."); 
+                        $("#terms").focus();
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
+                else {
+                    return true;
+                }
+            } else {
+                if( $('#terms').is(":visible")){
+                    if(!($('#terms').is(':checked'))) {
+                        alert("Please Select Read terms and conditions."); 
+                        $("#terms").focus();
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
+                else {
+                    return true;
+                }
+               
+            }
+
         }
        
     }
@@ -205,8 +236,9 @@
                 form.attr('id', 'woocommerce-checkout');
                 form_id = 'woocommerce-checkout';
             }      
-            
-            qualpay_load_embedded( form_id, form );
+            if (matches) {
+                qualpay_load_embedded( form_id, form );
+            }
 
             $( document ).on( 'updated_checkout', function( e, data ){
                 if ( ! token_used ) {

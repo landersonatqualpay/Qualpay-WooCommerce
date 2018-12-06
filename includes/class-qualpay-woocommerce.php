@@ -136,12 +136,7 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
      */
     public function get_transient_key()
     {
-       // echo QUALPAY_URL;
-       // if(isset($_COOKIE['set_transient_key']))
-      //  { 
-      //      $this->transient_key = $_COOKIE['set_transient_key'];
-      //  } else {
-            if (null === $this->transient_key) {
+        if (null === $this->transient_key) {
                 $transient_key = Qualpay_API::get_embedded_fields_token();
                 if (!is_wp_error($transient_key)) {
                     setcookie("set_transient_key", $transient_key->data->transient_key, time() + (60 * 28), '/MAMP/woo-commerce_plugin/');
@@ -149,9 +144,7 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                 } else {
                     $this->transient_key = false; // We tried. We failed. Let's put false to use the classic form.
                 }
-            }
-        //}   
-       
+        }
         return $this->transient_key;
     } 
 
@@ -160,15 +153,19 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
      */
     public function form()
     {
-       // echo "form";
+       $Cart_total = WC()->cart->total;
+       if($Cart_total > 0 || (Qualpay_Cart::recurring_in_cart())) {  
         $transient_key = $this->get_transient_key();
+            if (!$transient_key) {
+                parent::form();
+            } else {
+                echo '<input type="hidden" id="qualpay_card_id" name="qualpay_card_id" />';
+                echo '<div id="qp-embedded-container" align="center"></div>';
+            }
+       } else {
+           echo "To process an order for $0.00, you do not need to enter your credit card information";
+       }
         
-        if (!$transient_key) {
-            parent::form();
-        } else {
-            echo '<input type="hidden" id="qualpay_card_id" name="qualpay_card_id" />';
-            echo '<div id="qp-embedded-container" align="center"></div>';
-        }
     }
 
     /**
@@ -180,39 +177,44 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
         if (!is_checkout()) {
             return;
         }
-        
-        $transient_key = $this->get_transient_key();
-        
-        $options = get_option('woocommerce_qualpay_settings');
-        if (isset($options['testmode']) && 'no' === $options['testmode']) {
-            $mode = 'prod';
-        } else {
-            $iniFilename = QUALPAY_PATH."qp.txt";
-            $mode = "test";
-            if( file_exists($iniFilename) ) {
-                $props = parse_ini_file ($iniFilename);
-                if( !empty($props[host]) ) {
-                    $mode = $props[host];
+        global $woocommerce;
+
+        $Cart_total = WC()->cart->total;
+       
+        if($Cart_total > 0 || (Qualpay_Cart::recurring_in_cart())) { 
+            
+            $transient_key = $this->get_transient_key();
+            $options = get_option('woocommerce_qualpay_settings');
+            if (isset($options['testmode']) && 'no' === $options['testmode']) {
+                $mode = 'prod';
+            } else {
+                $iniFilename = QUALPAY_PATH."qp.txt";
+                $mode = "test";
+                if( file_exists($iniFilename) ) {
+                    $props = parse_ini_file ($iniFilename);
+                    if( !empty($props['host']) ) {
+                        $mode = $props['host'];
+                    }
                 }
+                //$mode = 'test';
             }
-            //$mode = 'test';
-        }
-      
-        if ($transient_key) {
-            wp_enqueue_style('qualpay-checkout-css', 'https://app.qualpay.com/hosted/embedded/css/qp-embedded.css');
-            wp_enqueue_script('qualpay-checkout-js', 'https://app-test.qualpay.com/hosted/embedded/js/qp-embedded-sdk.min.js', array('jquery'), '', true);
-            //wp_enqueue_script('qualpay-checkout-js', untrailingslashit(QUALPAY_URL) . '/assets/js/test_checkout.js', array('jquery'), '' , true);
-            wp_localize_script('qualpay-checkout-js', 'qualpay', array(
-                'ajax_url' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('qualpay_nonce'),
-                'merchant_id' => Qualpay_API::get_merchant_id(),
-                'sandbox_merchant_id' => Qualpay_API::get_sandbox_merchant_id(),
-                'transient_key' => $transient_key,
-                'mode' => $mode,
-                'embedded_css' => str_replace(array("\n\r", "\n", "\r"), "", $this->get_option('custom_css')),
-            ));
-            wp_enqueue_script('qualpay-checkout-form-js', untrailingslashit(QUALPAY_URL) . '/assets/js/checkout.js', array('jquery', 'qualpay-checkout-js'), '', true);
-        }
+        
+            if ($transient_key) {
+                wp_enqueue_style('qualpay-checkout-css', 'https://app.qualpay.com/hosted/embedded/css/qp-embedded.css');
+                wp_enqueue_script('qualpay-checkout-js', 'https://app-test.qualpay.com/hosted/embedded/js/qp-embedded-sdk.min.js', array('jquery'), '', true);
+                //wp_enqueue_script('qualpay-checkout-js', untrailingslashit(QUALPAY_URL) . '/assets/js/test_checkout.js', array('jquery'), '' , true);
+                wp_localize_script('qualpay-checkout-js', 'qualpay', array(
+                    'ajax_url' => admin_url('admin-ajax.php'),
+                    'nonce' => wp_create_nonce('qualpay_nonce'),
+                    'merchant_id' => Qualpay_API::get_merchant_id(),
+                    'sandbox_merchant_id' => Qualpay_API::get_sandbox_merchant_id(),
+                    'transient_key' => $transient_key,
+                    'mode' => $mode,
+                    'embedded_css' => str_replace(array("\n\r", "\n", "\r"), "", $this->get_option('custom_css')),
+                ));
+                wp_enqueue_script('qualpay-checkout-form-js', untrailingslashit(QUALPAY_URL) . '/assets/js/checkout.js', array('jquery', 'qualpay-checkout-js'), '', true);
+            }
+        } 
     }
 
     /**
@@ -448,12 +450,13 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
     {
        
         $order = wc_get_order($order_id);
-       
+        
         try {
             $response = null;
 
             // Handle payment.
-            if ($order->get_total() >= 0) {
+            if (($order->get_total() > 0) || (Qualpay_Cart::recurring_in_cart())) {
+                
                 $api = new Qualpay_API();
                 
                 $this->log("Start processing payment for order $order_id for the amount of {$order->get_total()}");
@@ -609,8 +612,8 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                         $env_name = "test";
                         if( file_exists($iniFilename) ) {
                             $props = parse_ini_file ($iniFilename);
-                            if( !empty($props[host]) ) {
-                                $env_name = $props[host];
+                            if( !empty($props['host']) ) {
+                                $env_name = $props['host'];
                                 $env_name = strtoupper($env_name);
                             }
                         }
@@ -632,7 +635,12 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                     );
 
                 }
-            } else {
+            } 
+            else if((($order->get_total()) == 0) && !(Qualpay_Cart::recurring_in_cart())) {
+                //echo "aaaa";exit;
+                $order->payment_complete();
+            }
+            else {
                 $this->log("fail to processing payment for order $order_id for the amount of {$order->get_total()}");
                // $order->payment_complete();
             }
@@ -1048,8 +1056,8 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                                     $env_name = "test";
                                     if( file_exists($iniFilename) ) {
                                         $props = parse_ini_file ($iniFilename);
-                                        if( !empty($props[host]) ) {
-                                            $env_name = $props[host];
+                                        if( !empty($props['host']) ) {
+                                            $env_name = $props['host'];
                                         }
                                     }
                                     if (strpos($get_customer_id[$i], $env_name) !== false) {
@@ -1163,9 +1171,9 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                                     $mode_name = "test";
                                     if( file_exists($iniFilename) ) {
                                         $props = parse_ini_file ($iniFilename);
-                                        if( !empty($props[host]) ) {
-                                            $mode =strlen($props[host]);
-                                            $mode_name = $props[host];
+                                        if( !empty($props['host']) ) {
+                                            $mode =strlen($props['host']);
+                                            $mode_name = $props['host'];
                                         }
                                     }
                                     $cid = strlen($new_customer->data->customer_id);

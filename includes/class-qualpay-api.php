@@ -22,8 +22,8 @@ class Qualpay_API {
 		if( file_exists($iniFilename) ) {
 			
 			$props = parse_ini_file ($iniFilename);
-			if( !empty($props[host]) ) {
-				$testUrl = "https://app-" . $props[host] . ".qualpay.com";
+			if( !empty($props['host']) ) {
+				$testUrl = "https://app-" . $props['host'] . ".qualpay.com";
 			}
 		}
 		 $this->test_endpoint = $testUrl;

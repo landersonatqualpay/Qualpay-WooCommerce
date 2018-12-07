@@ -26,6 +26,7 @@ Installing the Qualpay Plugin from the WordPress Dashboard
 3. Qualpay Payment Fields
 
 == Changelog ==
+
 2.0.6 Added support for recurring billing
 
 3.0.1 Added support for Hybrid Cart (subscription item and single item purchase in the same cart), allow two subscriptions in the same cart,  manage production and sandbox security keys in the configuration panel.

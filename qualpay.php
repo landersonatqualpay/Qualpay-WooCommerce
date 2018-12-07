@@ -7,7 +7,7 @@
  * Author URI:      https://qualpay.com
  * Text Domain:     qualpay
  * Domain Path:     /languages
- * Version:         3.0.2
+ * Version:         3.0.3
  * WC requires at least: 2.6.14
  * WC tested up to: 3.5.0
  * WP tested up to 5.0

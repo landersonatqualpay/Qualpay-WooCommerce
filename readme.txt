@@ -1,9 +1,12 @@
+
 === Qualpay Payment Plugin for WooCommerce ===
 Contributors: developerqualpay
 Tags: Payment Gateway, Recurring Billing, Payment, Tokenization, Credit Cards
 Requires at least: 4.4.0
 Tested up to: 5.0
+Stable tag: 3.0.4
 Requires PHP: 7.0
+Version : 3.0.4
 
 Qualpay Payment Plugin for WooCommerce is a complete payment solution for your WooCommerce Store.
 
@@ -26,7 +29,6 @@ Installing the Qualpay Plugin from the WordPress Dashboard
 3. Qualpay Payment Fields
 
 == Changelog ==
-
 2.0.6 Added support for recurring billing
 
 3.0.1 Added support for Hybrid Cart (subscription item and single item purchase in the same cart), allow two subscriptions in the same cart,  manage production and sandbox security keys in the configuration panel.
@@ -36,3 +38,5 @@ Installing the Qualpay Plugin from the WordPress Dashboard
 
 3.0.3  Added detailed customer messaging in the case credit card data does not pass front end validation.
 Bugfix: When Terms and Conditions acceptance is required ensure that the acceptance box is checked.
+
+3.0.4 Fixed a bug for merchant where when you create a manual order you can now see an order total and displays the embedded fields, they can now enter the card id and send through the credit card details in the Transaction log.

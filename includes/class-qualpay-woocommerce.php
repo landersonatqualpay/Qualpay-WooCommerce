@@ -153,7 +153,13 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
      */
     public function form()
     {
-       $Cart_total = WC()->cart->total;
+        $order_id_order_pay = absint( get_query_var( 'order-pay' ) );
+        if($order_id_order_pay) {
+             $order = new WC_Order( $order_id_order_pay );
+             $Cart_total = $order->get_total();
+        } else {
+            $Cart_total = WC()->cart->total;
+        } 
        if($Cart_total > 0 || (Qualpay_Cart::recurring_in_cart())) {  
         $transient_key = $this->get_transient_key();
             if (!$transient_key) {
@@ -179,8 +185,14 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
         }
         global $woocommerce;
 
-        $Cart_total = WC()->cart->total;
-       
+        $order_id_order_pay = absint( get_query_var( 'order-pay' ) );
+        if($order_id_order_pay) {
+             $order = new WC_Order( $order_id_order_pay );
+             $Cart_total = $order->get_total();
+        } else {
+            $Cart_total = WC()->cart->total;
+        } 
+        
         if($Cart_total > 0 || (Qualpay_Cart::recurring_in_cart())) { 
             
             $transient_key = $this->get_transient_key();

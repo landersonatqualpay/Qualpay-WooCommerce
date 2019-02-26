@@ -294,9 +294,9 @@ class QualPay_Webhook {
 					$my_query = new WP_Query( $args1 ); 
 					$order_id =$my_query->posts[0]->ID;
 					$order = wc_get_order(  $order_id );
-					if (isset($order)) {
+					/*if (isset($order)) {
 						$order_total = $order->get_total();
-					}
+					} */
 					$amt_tran = abs($data['amt_tran']);
 			
 					$remaining_refund_amount = $order->get_remaining_refund_amount(); 
@@ -345,9 +345,9 @@ class QualPay_Webhook {
 								$my_query = new WP_Query( $args ); 
 								$order_id =$my_query->posts[0]->ID;
 								$order = wc_get_order(  $order_id );
-								if (isset($order)) {
+								/*if (isset($order)) {
 									$order_total = $order->get_total();
-								}
+								}*/
 								$get_remaining_refund_amount = $order->get_remaining_refund_amount();
 								if($get_remaining_refund_amount <= $amt_tran) {
 									$order->update_status('completed', __('Order Payment Settled.', 'qualpay'));

@@ -159,9 +159,6 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
      */
     public function form()
     {
-        $options = get_option( 'woocommerce_qualpay_settings' );
-        //print_r($options);
-        $setting_use_save_card = $options['use_save_card'];
         $order_id_order_pay = absint(get_query_var('order-pay'));
         if ($order_id_order_pay) {
             $order = new WC_Order($order_id_order_pay);
@@ -179,84 +176,49 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                     $user_id = get_current_user_id();
                     $mid = Qualpay_API::get_merchant_id();
                     $get_customer_id = get_user_meta($user_id, '_qualpay_customer_id');
+
                     $customer_id = $this->get_customerid_according_env($get_customer_id);
 
                     if ($customer_id) {
-                        $get_customer_billing_cards = get_user_meta($user_id, '_qualpay_customer_billing_card');
-                        for ($i = 0; $i < count($get_customer_billing_cards); $i++) {
-                            $get_customer_billing_card = unserialize($get_customer_billing_cards[$i]);
+                        $get_customer_billing_cards = Qualpay_API::get_customer_billing_cards($customer_id, $mid);
+                        $billing_cards = $get_customer_billing_cards->data->billing_cards;
 
-                            if ($this->testmode == 'no') {
-                                if (strpos($get_customer_billing_card[0], 'production') !== false) {
-                                    if (strpos($get_customer_billing_card[2], $mid) !== false) {
-                                        if (strpos($get_customer_billing_card[1], $customer_id) !== false) {
-                                            $card_id = $get_customer_billing_card[3];
-                                            $last4 = substr($get_customer_billing_card[5], -4, 4);
-                                            $billing_card = $get_customer_billing_card[4];
-                                            $billing_card_type = $this->get_billing_card_type($billing_card);
-                                            $payment_cards .= '<input type="radio" id="qp_payment_cards" name="qp_payment_cards" value="' . $card_id . '"> ' . strtoupper($billing_card_type) . ' ( Ending in ' . $last4 . ')<br>';
-                                        }
-                                    }
-                                }
-                            } else {
-                               $iniFilename = QUALPAY_PATH . "qp.txt";
-                                $env_name = "test";
-                                if (file_exists($iniFilename)) {
-                                    $props = parse_ini_file($iniFilename);
-                                    if (!empty($props['host'])) {
-                                        $env_name = $props['host'];
-                                    }
-                                }
-                                
-                                if (strpos($get_customer_billing_card[0], $env_name) !== false) {
-                                    if (strpos($get_customer_billing_card[2], $mid) !== false) {
-                                        if (strpos($get_customer_billing_card[1], $customer_id) !== false) {
-                                            $card_id = $get_customer_billing_card[3];
-                                            $last4 = substr($get_customer_billing_card[5], -4, 4);
-                                            $billing_card = $get_customer_billing_card[4];
-                                            $billing_card_type = $this->get_billing_card_type($billing_card);
-                                            $payment_cards .= '<input type="radio" id="qp_payment_cards" name="qp_payment_cards" value="' . $card_id . '"> ' . strtoupper($billing_card_type) . ' ( Ending in ' . $last4 . ')<br>';
-                                        }
-                                    }
-                                }
-                            }
+                        foreach ($billing_cards as $billing_card) {
+                            $card_id = $billing_card->card_id;
+                            $last4 = substr($billing_card->card_number, -4, 4);
+                            $billing_card = $billing_card->card_type;
+                            $billing_card_type = $this->get_billing_card_type($billing_card);
+                            $payment_cards .= '<input type="radio" id="qp_payment_cards" name="qp_payment_cards" value="' . $card_id . '"> ' . strtoupper($billing_card_type) . ' ( Ending in ' . $last4 . ')<br>';
                         }
-                        
-                        if (count($get_customer_billing_cards) > 0) {
+                        if (count($billing_cards) > 0) {
                             $payment_cards .= '<input type="radio" id="qp_payment_cards" name="qp_payment_cards" value="credit_card" checked> New Credit Card';
                         }
                     }
-                }
-                if($setting_use_save_card == 'yes') {
-                    $save_card = '<div id="save_card" style="display: none;" align="left"><input type="checkbox" id="save_card_data" name="save_card_data" value="1"> Save My Card</div>';
                 }
                 $get_merchant_settings = Qualpay_API::get_merchant_settings($mid);
                 $dba_name = $get_merchant_settings->data->dba_name;
                 $merch_phone_number = $get_merchant_settings->data->merch_phone;
                 $merch_phone_number = $this->format_phone_us($merch_phone_number);
                 $date = date('M jS,Y');
-                $payment_cards .= '<br><div id="qp-embedded-container" align="center" style="display: none;"></div>';
+                $payment_cards .= '<div id="qp-embedded-container" align="center" style="display: none;"></div>';
                 echo '<input type="hidden" id="qualpay_card_id" name="qualpay_card_id" />';
                 echo '<input type="hidden" id="capture_id" name="capture_id" value="' . $this->capture . '" />';
                 echo $payment_cards;
                 $ach_div .= '<br><div id="ach_container" style="display: none;" align="center">';
                 $ach_div .= '<input type="checkbox" id="ach_authorize" name="ach_authorize" value="ach_authorize">';
                 $ach_div .= ' I authorize ' . $dba_name . ' to initiate a one-time electronic funds transfer for the payment described above from my bank account under the terms of this authorization on ' . $date . ' which will be processed on the next business day. This payment can be revoked by calling ' . $dba_name;
-                if ($merch_phone_number) {
-                    $ach_div .= ' at ' . $merch_phone_number;
+                if($merch_phone_number) {
+                $ach_div .= ' at ' . $merch_phone_number;
                 }
                 $ach_div .= '</div>';
-
                 echo $ach_div;
-                if ($save_card) {
-                    echo $save_card;
-                }
             }
         } else {
             echo "To process an order for $0.00, you do not need to enter your credit card information";
         }
 
     }
+     
 
     /**
      * Enqueuing Scripts for Qualpay Embedded Fields
@@ -294,15 +256,14 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                 }
                 //$mode = 'test';
             }
-            if ($mode != 'prod') {
-                $env_mode = '-' . $mode;
-            } else {
+            if($mode !='prod')
+                $env_mode = '-'.$mode;
+            else 
                 $env_mode = '';
-            }
 
             if ($transient_key) {
-                wp_enqueue_style('qualpay-checkout-css', 'https://app' . $env_mode . '.qualpay.com/hosted/embedded/css/qp-embedded.css');
-                wp_enqueue_script('qualpay-checkout-js', 'https://app' . $env_mode . '.qualpay.com/hosted/embedded/js/qp-embedded-sdk.min.js', array('jquery'), '', true);
+                wp_enqueue_style('qualpay-checkout-css', 'https://app'.$env_mode.'.qualpay.com/hosted/embedded/css/qp-embedded.css');
+                wp_enqueue_script('qualpay-checkout-js', 'https://app'.$env_mode.'.qualpay.com/hosted/embedded/js/qp-embedded-sdk.min.js', array('jquery'), '', true);
                 //wp_enqueue_script('qualpay-checkout-js', untrailingslashit(QUALPAY_URL) . '/assets/js/test_checkout.js', array('jquery'), '' , true);
                 wp_localize_script('qualpay-checkout-js', 'qualpay', array(
                     'ajax_url' => admin_url('admin-ajax.php'),
@@ -501,14 +462,6 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                     'default' => 'no',
                     'desc_tip' => false,
                 ),
-                'use_save_card' => array(
-                    'title' => __('Save Card', 'qualpay'),
-                    'label' => __('Use save card option Enable in checkout page.', 'qualpay'),
-                    'type' => 'checkbox',
-                  //  'description' => __('Whether or not to immediately capture the charge. When unchecked, the charge issues an authorization and will need to be captured later. All recurring and one-time payments will be captured immediately.', 'qualpay'),
-                    'default' => '',
-                    'desc_tip' => true,
-                ),
                 'custom_css' => array(
                     'title' => __('Custom CSS', 'qualpay'),
                     'label' => __('Add Custom CSS for Embedded Fields.', 'qualpay'),
@@ -607,18 +560,18 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                                 }
                                 $flag_else = 1;
                             }
-
-                            if (property_exists($response, 'data') && property_exists($response->data, 'response')) {
-                                $response = $response->data->response;
-                            }
-                            $response_code = '';
-
-                            if (property_exists($response, 'pg_id')) {
-                                add_post_meta($order_id, '_qualpay_pg_id', $response->pg_id);
-                            }
                         }
 
-                        
+                        // print_r($response);
+                        // exit;
+                        if (property_exists($response, 'data') && property_exists($response->data, 'response')) {
+                            $response = $response->data->response;
+                        }
+                        $response_code = '';
+
+                        if (property_exists($response, 'pg_id')) {
+                            add_post_meta($order_id, '_qualpay_pg_id', $response->pg_id);
+                        }
 
                     }
                 } else {
@@ -644,15 +597,15 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                                     }
                                     $flag_recurring = 1;
                                 }
-
-                                if (property_exists($response, 'data') && property_exists($response->data, 'response')) {
-                                    $response = $response->data->response;
-                                }
-                                if (property_exists($response, 'pg_id')) {
-                                    add_post_meta($order_id, '_qualpay_pg_id', $response->pg_id);
-                                }
                             }
-                            
+                            //  print_r($response);
+                            //  exit;
+                            if (property_exists($response, 'data') && property_exists($response->data, 'response')) {
+                                $response = $response->data->response;
+                            }
+                            if (property_exists($response, 'pg_id')) {
+                                add_post_meta($order_id, '_qualpay_pg_id', $response->pg_id);
+                            }
                         }
 
                     } else {
@@ -684,15 +637,16 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                                     }
                                     $flag_else = 1;
                                 }
-                                if (property_exists($response, 'data') && property_exists($response->data, 'response')) {
-                                    $response = $response->data->response;
-                                }
-                                $response_code = '';
-    
-                                if (property_exists($response, 'pg_id')) {
-                                    add_post_meta($order_id, '_qualpay_pg_id', $response->pg_id);
-                                }
                             }
+                            if (property_exists($response, 'data') && property_exists($response->data, 'response')) {
+                                $response = $response->data->response;
+                            }
+                            $response_code = '';
+
+                            if (property_exists($response, 'pg_id')) {
+                                add_post_meta($order_id, '_qualpay_pg_id', $response->pg_id);
+                            }
+
                         }
                     }
                 }
@@ -721,7 +675,10 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                 $order_id = version_compare(WC_VERSION, '3.0.0', '<') ? $order->id : $order->get_id();
 
                 if (0 === $response_code) {
-                    
+                    /*if (property_exists($response, 'pg_id')) {
+                    update_post_meta($order_id, '_qualpay_pg_id', $response->pg_id);
+                    } */
+
                     if (property_exists($response, 'auth_code')) {
                         update_post_meta($order_id, '_qualpay_auth_code', $response->auth_code);
                     }
@@ -825,41 +782,43 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
      * @param  float $amount
      * @return bool
      */
-    public function process_refund($order_id, $amount = null, $reason = '')
+    /* public function process_refund($order_id, $amount = null, $reason = '')
     {
-        $order = wc_get_order($order_id);
-    
-        $pg_id = get_post_meta($order_id, '_qualpay_pg_id', true);
-        if ('' === $pg_id) { 
-            return false;
-        }
-       
-        $this->log("Start refund for order $order_id for the amount of {$amount}");
-        $api = new Qualpay_API();
+    $order = wc_get_order($order_id);
 
-        $args = array(
-            'pg_id' => $pg_id,
-            'amt_tran' => $amount,
-        );
-
-        $response = $api->do_refund($args);
-
-        if (is_wp_error($response)) {
-            $this->log('Error: ' . $response->get_error_message());
-            return $response;
-        } elseif ('000' === $response->rcode) {
-            $format = __('Payment refunded via Qualpay. Amount: %s, rcode: %s, rmsg: %s.', 'qualpay');
-            $refund_message = sprintf($format, $amount, $response->rcode, $response->rmsg);
-            $order->add_order_note($refund_message);
-            $this->log('Success: ' . html_entity_decode(strip_tags($refund_message)));
-            if ($response->pg_id && ($response->pg_id != $pg_id)) {
-                update_post_meta($order_id, '_qualpay_pg_id', $response->pg_id, $pg_id);
-            }
-            
-            return true;
-        }
-
+    // origional code start from here
+    if (!$order || !$order->get_transaction_id()) {
+    return false;
     }
+
+    $pg_id = get_post_meta($order_id, '_qualpay_pg_id', true);
+    if ('' === $pg_id) {
+    return false;
+    }
+    //exit;
+
+    $this->log("Start refund for order $order_id for the amount of {$amount}");
+    $api = new Qualpay_API();
+
+    $args = array(
+    'pg_id' => $pg_id,
+    'amt_tran' => $amount,
+    );
+
+    $response = $api->do_refund($args);
+
+    if (is_wp_error($response)) {
+    $this->log('Error: ' . $response->get_error_message());
+    return $response;
+    } elseif ('000' === $response->rcode) {
+    $format = __('Payment refunded via Qualpay. Amount: %s, rcode: %s, rmsg: %s.', 'qualpay');
+    $refund_message = sprintf($format, $amount, $response->rcode, $response->rmsg);
+    $order->add_order_note($refund_message);
+    $this->log('Success: ' . html_entity_decode(strip_tags($refund_message)));
+    return true;
+    }
+
+    } */
 
     /**
      * Processing new plan while filtering the save section.
@@ -971,6 +930,8 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
      */
     protected function generate_payment_request($order)
     {
+        //  print_r($order);
+        //  exit;
         unset($post_data);
         $post_data = array();
 
@@ -983,9 +944,6 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
             $post_data['exp_date'] = $exp_date;
             $post_data['cvv2'] = wc_clean($_POST['qualpay-card-cvc']);
         }
-        if (isset($_POST['save_card_data'])) {
-            $post_data['save_card_data'] = $_POST['save_card_data'];
-        }
 
         ///JANKEE CHANGES
         $current_user = wp_get_current_user();
@@ -994,9 +952,7 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
         $get_customer_id = get_user_meta($current_user->ID, '_qualpay_customer_id');
 
         if (count($get_customer_id) > 0) {
-            $customer_id = $this->get_customerid_according_env($get_customer_id);
-            $mid = Qualpay_API::get_merchant_id();
-            
+
             if ($customer_id) {
                 //add or update billing info in Qualpay
                 $get_customer_billing_cards = Qualpay_API::get_customer_billing_cards($customer_id, $mid);
@@ -1016,8 +972,6 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                     $args['billing_last_name'] = $_POST['billing_last_name'];
                     $args['merchant_id'] = $mid;
                     $update_billing_card = Qualpay_API::update_customer_billing_cards($args);
-                    $billing_card = $update_billing_card->data->billing_cards;
-                    
                 } else {
                     $args['card_id'] = $post_data['card_id'];
                     $args['billing_zip'] = $_POST['billing_postcode'];
@@ -1026,30 +980,6 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                     $args['billing_last_name'] = $_POST['billing_last_name'];
                     $args['merchant_id'] = $mid;
                     $add_billing_card = Qualpay_API::add_customer_billing_cards($args);
-                    $billing_card = $add_billing_card->data->billing_cards;
-                
-                }
-            
-                if($billing_card && $post_data['save_card_data']) {
-                    for($i=0;$i<count($billing_card);$i++) {
-                        if($billing_card[$i]->card_id == $post_data['card_id'])
-                        {
-                            if($this->check_saved_card($customer_id,$post_data['card_id'],$new_user_id) != '1') 
-                            {
-                                $customerData = $this->format_json_save_customer_id($customer_id);
-                                $len_last4 = 4;
-                                $last4 = substr($billing_card[$i]->card_number, -4, 4);
-            
-                                $len_card_id = strlen($billing_card[$i]->card_id);
-                                $card_id = $billing_card[$i]->card_id;
-            
-                                $len_card_type = strlen($billing_card[$i]->card_type);
-                                $card_type = $billing_card[$i]->card_type;
-                                $data_customer_billing_card = 'a:6:{'.$customerData.'i:3;s:' . $len_card_id . ':"' . $card_id . '";i:4;s:' . $len_card_type . ':"' . $card_type . '";i:5;s:' . $len_last4 . ':"' . $last4 . '";}';
-                                add_user_meta($new_user_id, '_qualpay_customer_billing_card', $data_customer_billing_card);
-                            }
-                        }
-                    }
                 }
                 //end
             } else {
@@ -1057,11 +987,11 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
             }
 
         } else {
-            $customer_id = $this->create_customer_id_data($order, $post_data, $current_user);
+           $customer_id =  $this->create_customer_id_data($order, $post_data, $current_user);
         }
 
         $post_data['customer_id'] = $customer_id;
-        
+
         ///JANKEE END
 
         $order = wc_get_order($order->data['id']);
@@ -1129,7 +1059,7 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
         $post_data['tokenize'] = false;
         $post_data['cart_amt_other'] = 0;
         // TODO add line_items
-        
+
         /**
          * Filter the return value of the WC_Payment_Gateway_CC::generate_payment_request.
          *
@@ -1154,7 +1084,7 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
         $customer = array();
         $order = wc_get_order($order->data['id']);
         $cart_items = $order->get_items();
-
+        
         // Recurring can be multiple in cart. also multiple recurring same product can be in cart.
         foreach ($cart_items as $cart_item => $values) {
 
@@ -1180,13 +1110,11 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                             return new WP_Error('qualpay_error', __('No Product Selected for a Subscription', 'qualpay'));
                         }
 
-                        $post_data['purchase_id'] = $order->get_order_number();
-
                         if (!isset($args['cart_amt_other'])) {
                             $args['cart_amt_other'] = 0;
                         }
                         $plan_object = get_post_meta($product_id, '_qualpay_plan_data', true);
-
+                        
                         if ($plan_object) {
                             $post_data['subscription_on_plan'] = true;
                             $post_data['interval'] = $plan_object->interval;
@@ -1226,10 +1154,6 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                             $post_data['cvv2'] = wc_clean($_POST['qualpay-card-cvc']);
                         }
 
-                        if (isset($_POST['save_card_data'])) {
-                            $post_data['save_card_data'] = $_POST['save_card_data'];
-                        }
-
                         $current_user = wp_get_current_user();
                         $new_user_id = $current_user->ID;
 
@@ -1237,40 +1161,21 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
 
                         $customer_id = $this->get_customerid_according_env($get_customer_id);
 
-                        if ((!$customer_id) || ($_POST['qp_payment_cards'] == 'credit_card')) 
-                        {
+                        if (!$customer_id) {
+
                             $customer_billing = $order->get_address('billing');
                             $customer_shipping = $order->get_address('shipping');
                             // cusotmer Not yet on Qualpay, let's create it.
                             $customer_args = array();
                             //$customer_args['auto_generate_customer_id'] = true;
-                            if($_POST['qp_payment_cards'] == 'credit_card') {
-                                $post_data['customer_id'] = $customer_id;
-                            } else {
-
-                                if(($customer_billing['first_name'] == '') || ($customer_billing['last_name'] == '')) {
-                                    if($customer_billing['first_name'] == '') {
-                                        $customer_billing['first_name'] = 'nofname';
-                                    }
-                                    if($customer_billing['last_name'] == '') {
-                                        $customer_billing['last_name'] = 'nolname';
-                                    }
-                                    $customer_args['auto_generate_customer_id'] = true;
-                                    
-                                } else {
-                                    $customer_id_dynamic = substr(strtoupper($customer_billing['first_name'] . $customer_billing['last_name']), 0, 27);
-                                    $customer_id_dynamic = str_replace(' ', '', $customer_id_dynamic);
-                                    $customer_id_dynamic = preg_replace("/[^A-Za-z0-9]/", "", $customer_id_dynamic);
-                                    $six_digit_random_number = mt_rand(1000, 9999);
-                                    $customer_args['customer_id'] = $customer_id_dynamic . "_" . $six_digit_random_number;
-                                }
-                                
-                                $customer_args['customer_first_name'] = $customer_billing['first_name'];
-                                $customer_args['customer_last_name'] = $customer_billing['last_name'];
-                                $customer_args['customer_firm_name'] = $customer_billing['company'];
-                                $customer_args['customer_phone'] = $customer_billing['phone'];
-                                $customer_args['customer_email'] = version_compare(WC_VERSION, '3.0.0', '<') ? $order->billing_email : $order->get_billing_email();
-                            }
+                            $customer_id_dynamic = substr(strtoupper($customer_billing['first_name'] . $customer_billing['last_name']), 0, 27);
+                            $customer_id_dynamic = str_replace(' ', '', $customer_id_dynamic);
+                            $customer_id_dynamic = preg_replace("/[^A-Za-z0-9]/", "", $customer_id_dynamic);
+                            $six_digit_random_number = mt_rand(1000, 9999);
+                            $customer_args['customer_id'] = $customer_id_dynamic. "_" .$six_digit_random_number;
+                            $customer_args['customer_first_name'] = $customer_billing['first_name'];
+                            $customer_args['customer_last_name'] = $customer_billing['last_name'];
+                            $customer_args['customer_email'] = version_compare(WC_VERSION, '3.0.0', '<') ? $order->billing_email : $order->get_billing_email();
                             $postcode = str_replace('-', '', $customer_billing['postcode']);
 
                             $customer_args['billing_cards'] = array();
@@ -1303,18 +1208,13 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                                     'shipping_country' => $customer_shipping['country'],
                                 );
                             }
-
                             $post_data['customer'] = $customer_args;
-                           // $post_data['use_existing_customer'] = true;
+                            $post_data['use_existing_customer'] = true;
                         } else {
                             $post_data['customer_id'] = $customer_id;
-                            
                         }
 
                         $request = $post_data;
-                        // print_r($request);
-                        // exit;
-                        
                         // Add subscription and customers according to recurring product.
                         $endpoint = untrailingslashit(Qualpay_API::get_endpoint('platform/subscription'));
 
@@ -1343,57 +1243,52 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                             } else {
                                 $user_id = $current_user->ID;
                             }
-                            $customerData = $this->format_json_save_customer_id($new_customer->data->customer_id);
-                            $data_customer = 'a:3:{'.$customerData.'}';
+
+                            if ($this->testmode == 'yes') {
+                                $iniFilename = QUALPAY_PATH . "qp.txt";
+                                $mode = strlen('test');
+                                $mode_name = "test";
+                                if (file_exists($iniFilename)) {
+                                    $props = parse_ini_file($iniFilename);
+                                    if (!empty($props['host'])) {
+                                        $mode = strlen($props['host']);
+                                        $mode_name = $props['host'];
+                                    }
+                                }
+                                $cid = strlen($new_customer->data->customer_id);
+                                $cid_name = $new_customer->data->customer_id;
+                                $mid = Qualpay_API::get_merchant_id();
+                                $mid_length = strlen($mid);
+
+                            } else {
+                                $mode = strlen('production');
+                                $mode_name = "production";
+                                $mid = Qualpay_API::get_merchant_id();
+                                $cid = strlen($new_customer->data->customer_id);
+                                $cid_name = $new_customer->data->customer_id;
+                                $mid = Qualpay_API::get_merchant_id();
+                                $mid_length = strlen($mid);
+                            }
+
+                            $data_customer = 'a:3:{i:0;s:' . $mode . ':"' . $mode_name . '";i:1;s:' . $cid . ':"' . $cid_name . '";i:2;s:' . $mid_length . ':"' . $mid . '";}';
                             add_user_meta($user_id, '_qualpay_customer_id', $data_customer);
                             $customer_id = $new_customer->data->customer_id;
-                            
+
                         }
 
                         $order_id = version_compare(WC_VERSION, '3.0.0', '<') ? $order->id : $order->get_id();
-
+                        
                         if (isset($new_customer)) {
                             add_post_meta($order_id, '_qualpay_subscription_id', $new_customer->data->subscription_id);
                             add_post_meta($order_id, '_qualpay_subscription_data', $new_customer->data);
                             add_post_meta($order_id, '_qualpay_subscription_customer_id', $new_customer->data->customer_id);
-                            
-                            if ($new_customer->data->response->pg_id) {
-                                add_post_meta($order_id, '_qualpay_pg_id', $new_customer->data->response->pg_id);
-                            }
-
-                            //change according to billing cards add in subscription
-                            $billing_card = $new_customer->data->customer->billing_cards;
-                            if($billing_card && $post_data['save_card_data']) {
-                                for($i=0;$i<count($billing_card);$i++) {
-                                    if($billing_card[$i]->card_id == $post_data['card_id'])
-                                    {
-                                        $card_id = $post_data['card_id'];
-                                        $user_id = $current_user->ID;
-                                        if($this->check_saved_card($new_customer->data->customer_id, $card_id, $user_id) != '1') 
-                                        {
-                                            $customerData = $this->format_json_save_customer_id($customer_id);
-                                            $len_last4 = 4;
-                                            $last4 = substr($billing_card[$i]->card_number, -4, 4);
-                        
-                                            $len_card_id = strlen($billing_card[$i]->card_id);
-                                            $card_id = $billing_card[$i]->card_id;
-                        
-                                            $len_card_type = strlen($billing_card[$i]->card_type);
-                                            $card_type = $billing_card[$i]->card_type;
-                                            $data_customer_billing_card = 'a:6:{'.$customerData.'i:3;s:' . $len_card_id . ':"' . $card_id . '";i:4;s:' . $len_card_type . ':"' . $card_type . '";i:5;s:' . $len_last4 . ':"' . $last4 . '";}';
-                                            add_user_meta($new_user_id, '_qualpay_customer_billing_card', $data_customer_billing_card);
-                                        }
-                                    }
-                                }
-                            }
                         }
-
                     }
                 }
             }
 
         }
-
+       
         /**
          * Filter the return value of the WC_Payment_Gateway_CC::generate_payment_request_recurring
          *
@@ -1455,11 +1350,11 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                     require_once 'class-qualpay-plan-list.php';
                     $plan_table = new Qualpay_Plan_List_Table();
                     $plan_table->prepare_items();
-                    echo '<h2>' . sprintf('<a href="' . $qualpay_settings_link . '">%s</a> > %s', __('Qualpay', 'qualpay'), __('Plans', 'qualpay')) . sprintf(' <a class="page-title-action" href="' . $qualpay_plans_new_link . '">%s</a>', __('Add New', 'qualpay')) . '</h2>';
+                    echo '<h2>' . sprintf('<a href="' . $qualpay_settings_link . '">%s</a> > %s', __('QualPay', 'qualpay'), __('Plans', 'qualpay')) . sprintf(' <a class="page-title-action" href="' . $qualpay_plans_new_link . '">%s</a>', __('Add New', 'qualpay')) . '</h2>';
                     $plan_table->display();
                     break;
                 case 'new':
-                    echo '<h2>' . sprintf('<a href="' . $qualpay_settings_link . '">%s</a> > <a href="' . $qualpay_plans_link . '">%s</a>', __('Qualpay', 'qualpay'), __('Plans', 'qualpay')) . ' > ' . __('New Plan', 'qualpay') . '</h2>';
+                    echo '<h2>' . sprintf('<a href="' . $qualpay_settings_link . '">%s</a> > <a href="' . $qualpay_plans_link . '">%s</a>', __('QualPay', 'qualpay'), __('Plans', 'qualpay')) . ' > ' . __('New Plan', 'qualpay') . '</h2>';
                     include_once 'views/admin/html-plan-form.php';
                     break;
                 default:
@@ -1488,34 +1383,23 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
 
     public function create_customer_id_data($order, $post_data, $current_user)
     {
+
         $customer_billing = $order->get_address('billing');
         $customer_shipping = $order->get_address('shipping');
 
         // Not yet on Qualpay, let's create it.
         $customer_args = array();
         //$customer_args['auto_generate_customer_id'] = true;
-        if(($customer_billing['first_name'] == '') || ($customer_billing['last_name'] == '')) {
-            if($customer_billing['first_name'] == '') {
-                $customer_billing['first_name'] = 'nofname';
-            }
-            if($customer_billing['last_name'] == '') {
-                $customer_billing['last_name'] = 'nolname';
-            }
-            $customer_args['auto_generate_customer_id'] = true;
-            
-        } else {
-            $customer_id_dynamic = substr(strtoupper($customer_billing['first_name'] . $customer_billing['last_name']), 0, 27);
-            $customer_id_dynamic = str_replace(' ', '', $customer_id_dynamic);
-            $customer_id_dynamic = preg_replace("/[^A-Za-z0-9]/", "", $customer_id_dynamic);
-            $six_digit_random_number = mt_rand(1000, 9999);
-            $customer_args['customer_id'] = $customer_id_dynamic . "_" . $six_digit_random_number;
-        }
+        $customer_id_dynamic = substr(strtoupper($customer_billing['first_name'] . $customer_billing['last_name']), 0, 27);
+        $customer_id_dynamic = str_replace(' ', '', $customer_id_dynamic);
+        $customer_id_dynamic = preg_replace("/[^A-Za-z0-9]/", "", $customer_id_dynamic);
+        $six_digit_random_number = mt_rand(1000, 9999);
+        $customer_args['customer_id'] = $customer_id_dynamic. "_" .$six_digit_random_number;
         $customer_args['customer_first_name'] = $customer_billing['first_name'];
         $customer_args['customer_last_name'] = $customer_billing['last_name'];
-        $customer_args['customer_firm_name'] = $customer_billing['company'];
         $customer_args['customer_email'] = version_compare(WC_VERSION, '3.0.0', '<') ? $order->billing_email : $order->get_billing_email();
-        $customer_args['customer_phone'] = $customer_billing['phone'];
         $postcode = str_replace('-', '', $customer_billing['postcode']);
+
         $customer_args['billing_cards'] = array();
 
         $customer_args['billing_cards'][] = array(
@@ -1557,28 +1441,36 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
         }
 
         $user_id = $current_user->ID;
-        $customerData = $this->format_json_save_customer_id($new_customer->data->customer_id);
 
-        $data_customer = 'a:3:{'.$customerData.'}';
+        if ($this->testmode == 'yes') {
+            $iniFilename = QUALPAY_PATH . "qp.txt";
+            $mode = strlen('test');
+            $mode_name = "test";
+            if (file_exists($iniFilename)) {
+                $props = parse_ini_file($iniFilename);
+                if (!empty($props['host'])) {
+                    $mode = strlen($props['host']);
+                    $mode_name = $props['host'];
+                }
+            }
+            $cid = strlen($new_customer->data->customer_id);
+            $cid_name = $new_customer->data->customer_id;
+            $mid = Qualpay_API::get_merchant_id();
+            $mid_length = strlen($mid);
+
+        } else {
+            $mode = strlen('production');
+            $mode_name = "production";
+            $mid = Qualpay_API::get_merchant_id();
+            $cid = strlen($new_customer->data->customer_id);
+            $cid_name = $new_customer->data->customer_id;
+            $mid = Qualpay_API::get_merchant_id();
+            $mid_length = strlen($mid);
+        }
+        $data_customer = 'a:3:{i:0;s:' . $mode . ':"' . $mode_name . '";i:1;s:' . $cid . ':"' . $cid_name . '";i:2;s:' . $mid_length . ':"' . $mid . '";}';
+
         add_user_meta($user_id, '_qualpay_customer_id', $data_customer);
 
-        $card_id = $new_customer->data->billing_cards[0]->card_id;    
-        if ($post_data['save_card_data']) {
-            if($this->check_saved_card($new_customer->data->customer_id, $card_id, $user_id) != '1') 
-            {
-                $len_last4 = 4;
-                $last4 = substr($new_customer->data->billing_cards[0]->card_number, -4, 4);
-    
-                $len_card_id = strlen($new_customer->data->billing_cards[0]->card_id);
-                $card_id = $new_customer->data->billing_cards[0]->card_id;
-    
-                $len_card_type = strlen($new_customer->data->billing_cards[0]->card_type);
-                $card_type = $new_customer->data->billing_cards[0]->card_type;
-    
-                $data_customer_billing_card = 'a:6:{'.$customerData.'i:3;s:' . $len_card_id . ':"' . $card_id . '";i:4;s:' . $len_card_type . ':"' . $card_type . '";i:5;s:' . $len_last4 . ':"' . $last4 . '";}';
-                add_user_meta($user_id, '_qualpay_customer_billing_card', $data_customer_billing_card);
-            }
-         }
         return $customer_id = $new_customer->data->customer_id;
 
     }
@@ -1633,21 +1525,22 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
         }
     }
 
-    public function get_customerid_according_env($get_customer_ids)
+    public function get_customerid_according_env($get_customer_id)
     {
-        
-        for ($i = 0; $i < count($get_customer_ids); $i++) {
-            $get_customer_id= unserialize($get_customer_ids[$i]);
-           
-            if ($this->testmode == 'no') {
-                if (strpos($get_customer_id[0], 'production') !== false) {
+
+        if ($this->testmode == 'no') {
+            for ($i = 0; $i < count($get_customer_id); $i++) {
+                if (strpos($get_customer_id[$i], 'production') !== false) {
                     $mid = Qualpay_API::get_merchant_id();
-                    if (strpos($get_customer_id[2], $mid) !== false) {
-                       $customer_id = $get_customer_id[1];
+                    if (strpos($get_customer_id[$i], $mid) !== false) {
+                        $mydata = unserialize($get_customer_id[$i]);
+                        $customer_id = $mydata[1];
                     }
                 }
-            } else {
-                $iniFilename = QUALPAY_PATH . "qp.txt";                
+            }
+        } else {
+            for ($i = 0; $i < count($get_customer_id); $i++) {
+                $iniFilename = QUALPAY_PATH . "qp.txt";
                 $env_name = "test";
                 if (file_exists($iniFilename)) {
                     $props = parse_ini_file($iniFilename);
@@ -1655,107 +1548,37 @@ class WC_Gateway_Qualpay extends WC_Payment_Gateway_CC
                         $env_name = $props['host'];
                     }
                 }
-                
-                if (strpos($get_customer_id[0], $env_name) !== false) {
+                if (strpos($get_customer_id[$i], $env_name) !== false) {
                     $mid = Qualpay_API::get_merchant_id();
-                    if (strpos($get_customer_id[2], $mid) !== false) {
-                        $customer_id = $get_customer_id[1];
+                    if (strpos($get_customer_id[$i], $mid) !== false) {
+                        $mydata = unserialize($get_customer_id[$i]);
+                        $customer_id = $mydata[1];
                     }
                 }
             }
         }
         return $customer_id;
     }
-
-    public function format_phone_us($phone)
-    {
-        // note: making sure we have something
-        if (!isset($phone{3})) {return '';}
-        // note: strip out everything but numbers
-        $phone = preg_replace("/[^0-9]/", "", $phone);
-        $length = strlen($phone);
-        switch ($length) {
-            case 7:
-                return preg_replace("/([0-9]{3})([0-9]{4})/", "$1-$2", $phone);
-                break;
-            case 10:
-                return preg_replace("/([0-9]{3})([0-9]{3})([0-9]{4})/", "($1) $2-$3", $phone);
-                break;
-            case 11:
-                return preg_replace("/([0-9]{1})([0-9]{3})([0-9]{3})([0-9]{4})/", "$1($2) $3-$4", $phone);
-                break;
-            default:
-                return $phone;
-                break;
-        }
-    }
-
-    public function format_json_save_customer_id($customer_id) {
-        if ($this->testmode == 'yes') {
-            $iniFilename = QUALPAY_PATH . "qp.txt";
-            $mode = strlen('test');
-            $mode_name = "test";
-            if (file_exists($iniFilename)) {
-                $props = parse_ini_file($iniFilename);
-                if (!empty($props['host'])) {
-                    $mode = strlen($props['host']);
-                    $mode_name = $props['host'];
-                }
-            }
-            $cid = strlen($customer_id);
-            $cid_name = $customer_id;
-            $mid = Qualpay_API::get_merchant_id();
-            $mid_length = strlen($mid);
-
-        } else {
-            $mode = strlen('production');
-            $mode_name = "production";
-            $mid = Qualpay_API::get_merchant_id();
-            $cid = strlen($customerData->customer_id);
-            $cid_name = $customerData->customer_id;
-            $mid = Qualpay_API::get_merchant_id();
-            $mid_length = strlen($mid);
-        }
-        return $data = 'i:0;s:' . $mode . ':"' . $mode_name . '";i:1;s:' . $cid . ':"' . $cid_name . '";i:2;s:' . $mid_length . ':"' . $mid . '";';
-    }
-
-    public function check_saved_card($customer_id, $card_id, $user_id) {
-        $get_customer_billing_cards = get_user_meta($user_id, '_qualpay_customer_billing_card');
-        $mid = Qualpay_API::get_merchant_id();
-        for ($i = 0; $i < count($get_customer_billing_cards); $i++) {
-            $get_customer_billing_card = unserialize($get_customer_billing_cards[$i]);
-            if ($this->testmode == 'no') {
-                if (strpos($get_customer_billing_card[0], 'production') !== false) {
-                    if (strpos($get_customer_billing_card[2], $mid) !== false) {
-                        if (strpos($get_customer_billing_card[1], $customer_id) !== false) {
-                            $billing_card_id = $get_customer_billing_card[3];
-                            if($billing_card_id== $card_id) {
-                                return "1";
-                            } 
-                        }
-                    }
-                }
-            } else {
-               $iniFilename = QUALPAY_PATH . "qp.txt";
-                $env_name = "test";
-                if (file_exists($iniFilename)) {
-                    $props = parse_ini_file($iniFilename);
-                    if (!empty($props['host'])) {
-                        $env_name = $props['host'];
-                    }
-                }
-                
-                if (strpos($get_customer_billing_card[0], $env_name) !== false) {
-                    if (strpos($get_customer_billing_card[2], $mid) !== false) {
-                        if (strpos($get_customer_billing_card[1], $customer_id) !== false) {
-                            $billing_card_id = $get_customer_billing_card[3];
-                            if($billing_card_id== $card_id) {
-                                return "1";
-                            } 
-                        }
-                    }
-                }
-            }
-        }
+    
+    function format_phone_us($phone) {
+      // note: making sure we have something
+      if(!isset($phone{3})) { return ''; }
+      // note: strip out everything but numbers 
+      $phone = preg_replace("/[^0-9]/", "", $phone);
+      $length = strlen($phone);
+      switch($length) {
+      case 7:
+        return preg_replace("/([0-9]{3})([0-9]{4})/", "$1-$2", $phone);
+      break;
+      case 10:
+       return preg_replace("/([0-9]{3})([0-9]{3})([0-9]{4})/", "($1) $2-$3", $phone);
+      break;
+      case 11:
+      return preg_replace("/([0-9]{1})([0-9]{3})([0-9]{3})([0-9]{4})/", "$1($2) $3-$4", $phone);
+      break;
+      default:
+        return $phone;
+      break;
+      }
     }
 }

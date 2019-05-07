@@ -3,10 +3,10 @@
 Contributors: developerqualpay
 Tags: Payment Gateway, Recurring Billing, Payment, Tokenization, Credit Cards
 Requires at least: 4.4.0
-Tested up to: 5.1
-Stable tag: 3.0.5
+Tested up to: 5.2
+Stable tag: 3.0.9
 Requires PHP: 7.0
-Version : 3.0.5
+Version : 3.0.9
 
 Qualpay Payment Plugin for WooCommerce is a complete payment solution for your WooCommerce Store.
 
@@ -42,3 +42,13 @@ Bugfix: When Terms and Conditions acceptance is required ensure that the accepta
 3.0.4 Fixed a bug for merchant where when you create a manual order you can now see an order total and displays the embedded fields, they can now enter the card id and send through the credit card details in the Transaction log.
 
 3.0.5 Fixed a bug for log error.
+
+3.0.6 bugfix: Manual orders can be processed while subscription is in cart.
+
+3.0.7 Fixed a bug for counting a total including discounts in invoice payment and fixed a php error log.
+
+3.0.8 You can now add a Qualpay security logo next to the title on the Qualpay payment frame. For logged in customers (not checking out as a guest) , records will be written to the Qualpay customer vault even when recurring billing is not enabled.
+
+3.0.9 Qualpay Customer Vault entries from WooCommerce will include a customer ID formatted as firstname+lastname+3 digit random number and the phone number and company name as input by your customer during checkout.
+ACH Payments are now supported.  Contact Qualpay at support@qualpay.com to have ACH enabled on your account.  You must use “capture charge immediately” to process ACH payments through WooCommerce.
+Customers can now pay with a saved card-on-file.  If you enable cards-on-file your customer will be presented with a “Save Card” checkbox.  Upon the next checkout, the saved card will be presented as a payment option.  Not available for guest checkout, and we do recommend that you enforce strong passwords if you decide to opt-in to this feature.

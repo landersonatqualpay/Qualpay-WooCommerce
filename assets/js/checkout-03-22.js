@@ -3,16 +3,9 @@
 
 (function($){
     var token_used = false;
-    var capture_id = $("#capture_id").val();
-    var enable_ach = false;
-    if(capture_id){
-        enable_ach = true;
-    }
-    
     function qualpay_load_embedded( form_id, form, token ) {
-        $('#qp-embedded-container').show();
-        $('#save_card').show();
         token = token || qualpay.transient_key;
+
         qpEmbeddedForm.loadFrame(
             parseInt( qualpay.merchant_id ),
             {
@@ -22,25 +15,9 @@
                 tokenize: true,
                 preSubmit: preSubmit,
                 style: qualpay.embedded_css,
-                achConfig: {
-                    enabled: enable_ach,
-                    onPaymentTypeChange: function (data) {
-                      console.log("Display ", data.type);
-                      if(data.type == 'ACH') {
-                        $("#ach_container").show();
-                        $("#save_card").hide(); 
-                      } else {
-                        $("#ach_container").hide(); 
-                        $("#save_card").show(); 
-                      }
-                    }
-                  },
                 onSuccess: function( data ) {
-                    console.log('success here');
-                    // console.log(data);
-                    // alert(data);
+                    console.log('success');
                     $('#qualpay_card_id').val( data.card_id );
-
                     token_used = true;
                     form.submit();
                 },
@@ -58,14 +35,11 @@
             }
         );
     
-        
-       
-    }
-
-    function preSubmit()
+        function preSubmit()
         {
             var url      = window.location.href; 
             var matches = url.match(/\/order-pay\/(.*)$/);
+            
             if (!matches) {
                 var billing_first_name  = $('#billing_first_name');
                 var billing_last_name   = $('#billing_last_name');
@@ -78,13 +52,7 @@
                 var billing_email       = $('#billing_email');
                 var account_username    = $('#account_username');
                 var account_password    = $('#account_password');
-
-                // else if($('input[name="ach_authorize"]:checked').length == '1'){
-                //     alert("ach_authorize");
-                // }
-
-
-                //alert( $('#account_username').is(":visible"));
+                
             //  var name_regex = '/^[a-zA-Z]+$/';
                 var email_regex = /^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$/;
             //  var add_regex = '/^[0-9a-zA-Z]+$/';
@@ -200,38 +168,25 @@
                     return false;
                 }
             
-               // else 
-                // var method = $('input[name=payment_method]:checked');
-                //     if(method.val() == 'qualpay'){
-                //         qualpay_load_embedded( form_id, form );
-                //     }
-                // var payment = $('input[name=payment_method]');
-                
-                else if ($('input[name="createaccount"]:checked').length == '1') {
-                    if ((typeof account_username !== 'undefined') && account_username.val() == "") {
-                        alert("Username is mandatory"); 
-                        $('.wpmc-step-payment').removeClass('current');
-                        $('.wpmc-step-billing').addClass('current');
-                        $('#wpmc-prev').removeClass('current');
-                        $('#wpmc-next').addClass('current');
-                        $("#account_username").focus();
-                        return false;
-                    }
-                    else if ((typeof account_password !== 'undefined') && account_password.val() == "") {
-                        alert("Password is mandatory"); 
-                        $('.wpmc-step-payment').removeClass('current');
-                        $('.wpmc-step-billing').addClass('current');
-                        $('#wpmc-prev').removeClass('current');
-                        $('#wpmc-next').addClass('current');
-                        $("#account_password").focus();
-                        return false;
-                    } 
-                }
-                else if($('#ach_authorize').is(":visible")) {
-                    if($('input[name="ach_authorize"]:checked').length == '0') {
-                        alert('Click on the check box to authorize the electronic funds transfer.');
-                        return false;
-                    }
+                    else if ($('input[name="createaccount"]:checked').length > 0) {
+                        if ((typeof account_username !== 'undefined') && account_username.val() == "") {
+                            alert("Username is mandatory"); 
+                            $('.wpmc-step-payment').removeClass('current');
+                            $('.wpmc-step-billing').addClass('current');
+                            $('#wpmc-prev').removeClass('current');
+                            $('#wpmc-next').addClass('current');
+                            $("#account_username").focus();
+                            return false;
+                        }
+                        else if ((typeof account_password !== 'undefined') && account_password.val() == "") {
+                            alert("Password is mandatory"); 
+                            $('.wpmc-step-payment').removeClass('current');
+                            $('.wpmc-step-billing').addClass('current');
+                            $('#wpmc-prev').removeClass('current');
+                            $('#wpmc-next').addClass('current');
+                            $("#account_password").focus();
+                            return false;
+                        }
                 }
                 else if( $('#terms').is(":visible")){
                     if(!($('#terms').is(':checked'))) {
@@ -242,38 +197,11 @@
                         return true;
                     }
                 }
-                else if(($('#account_username').is(":visible")) && ($('#account_password').is(":visible"))) {
-                    if ((typeof account_username !== 'undefined') && account_username.val() == "") {
-                        alert("Username is mandatory"); 
-                        $('.wpmc-step-payment').removeClass('current');
-                        $('.wpmc-step-billing').addClass('current');
-                        $('#wpmc-prev').removeClass('current');
-                        $('#wpmc-next').addClass('current');
-                        $("#account_username").focus();
-                        return false;
-                    }
-                    if ((typeof account_password !== 'undefined') && account_password.val() == "") {
-                        alert("Password is mandatory"); 
-                        $('.wpmc-step-payment').removeClass('current');
-                        $('.wpmc-step-billing').addClass('current');
-                        $('#wpmc-prev').removeClass('current');
-                        $('#wpmc-next').addClass('current');
-                        $("#account_password").focus();
-                        return false;
-                    } 
-                }
-               
                 else {
                     return true;
                 }
             } else {
-                if($('#ach_authorize').is(":visible")) {
-                    if($('input[name="ach_authorize"]:checked').length == '0') {
-                        alert('Click on the check box to authorize the electronic funds transfer.');
-                        return false;
-                    }
-                }
-                else if( $('#terms').is(":visible")){
+                if( $('#terms').is(":visible")){
                     if(!($('#terms').is(':checked'))) {
                         alert("Please Select Read terms and conditions."); 
                         $("#terms").focus();
@@ -282,7 +210,6 @@
                         return true;
                     }
                 }
-               
                 else {
                     return true;
                 }
@@ -290,15 +217,11 @@
             }
 
         }
-    function unload_frame(){
-        $('#qp-embedded-container').hide();
-        $("#ach_container").hide();  
-        $("#save_card").hide();
-        qpEmbeddedForm.unloadFrame();
-
+       
     }
 
     $(function(){
+
         var form = $('form.checkout');
         var url      = window.location.href; 
         var matches = url.match(/\/order-pay\/(.*)$/);
@@ -314,20 +237,26 @@
                 form_id = 'woocommerce-checkout';
             }      
             if (matches) {
-                frame_load_with_conditions(form_id,form);
-                //qualpay_load_embedded( form_id, form );
+                qualpay_load_embedded( form_id, form );
             }
 
             $( document ).on( 'updated_checkout', function( e, data ){
                 if ( ! token_used ) {
-                    frame_load_with_conditions(form_id,form);
+                    //qualpay_load_embedded( form_id, form );
+                    var method = $('input[name=payment_method]');
+                    method.change(function() {
+                        if ('qualpay' == $(this).val() ) {
+                            qualpay_load_embedded( form_id, form );
+                        }
+                    });
+                    
                 } else {
-                     $.ajax({
+                    $.ajax({
                         url: qualpay.ajax_url,
                         data: { action: 'qualpay_get_embedded_token', nonce: qualpay.nonce },
                         success: function( resp ) {
                             if( resp.success ) {
-                                unload_frame();
+                                qpEmbeddedForm.unloadFrame();
                                 qualpay.transient_key = resp.data.transient_key;
                                 qualpay_load_embedded( form_id, form, qualpay.transient_key );
                             }
@@ -345,57 +274,4 @@
             });
         }
     });
-
-    function frame_load_with_conditions(form_id,form) {
-        var payment = $('input[name=payment_method]');
-        var method = $('input[name=payment_method]:checked');
-        
-       
-       
-        if(method.val() == 'qualpay'){
-            get_card_id(form_id,form);
-
-            
-         }
-         payment.change(function() {
-            if ('qualpay' == $(this).val() ) {
-                if ( ! token_used ) {
-                    get_card_id(form_id,form);
-                } else {
-                    $.ajax({
-                        url: qualpay.ajax_url,
-                        data: { action: 'qualpay_get_embedded_token', nonce: qualpay.nonce },
-                        success: function( resp ) {
-                            if( resp.success ) {
-                                qpEmbeddedForm.unloadFrame();
-                                qualpay.transient_key = resp.data.transient_key;
-                                qualpay_load_embedded( form_id, form, qualpay.transient_key );
-                            }
-                        }
-                    });
-                } 
-            } else {
-                unload_frame();
-            }
-        });
-    }
-    function get_card_id(form_id, form) {
-        var card_value = $('input[name=qp_payment_cards]:checked').val();
-        var payment_card = $('input[name=qp_payment_cards]');
-        if(($('input[name=qp_payment_cards]').is(":visible"))) {
-            if(card_value == 'credit_card') {
-                qualpay_load_embedded( form_id, form );
-            } else {
-                unload_frame();
-                $('#qualpay_card_id').val( card_value );
-            }
-            payment_card.change(function() {
-                get_card_id(form_id,form);
-            });
-        } else {
-            qualpay_load_embedded( form_id, form );
-        }
-        
-    }
-    
 })(jQuery);

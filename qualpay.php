@@ -7,10 +7,10 @@
  * Author URI:      https://qualpay.com
  * Text Domain:     qualpay
  * Domain Path:     /languages
- * Version:         3.0.5
+ * Version:         3.0.9
  * WC requires at least: 2.6.14
- * WC tested up to: 3.5.0
- * WP tested up to 5.1
+ * WC tested up to: 3.6.2
+ * WP tested up to 5.2
  * Wp Requires at least : 4.4.0
  * @package         Qualpay
  */
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'QUALPAY_PATH', plugin_dir_path( __FILE__ ) );
 define( 'QUALPAY_URL', plugin_dir_url( __FILE__ ) );
 define( 'QUALPAY_FILE', __FILE__ );
-define( 'QUALPAY_VERSION', '3.0.5' );
+define( 'QUALPAY_VERSION', '3.0.9' );
 define( 'QUALPAY_REQ_WC_VERSION', '2.6.14' );
 define( 'QUALPAY_REQ_WCS_VERSION', '2.1.0' );
 define( 'QUALPAY_OPTION_PREFIX', 'qualpay_' );
@@ -38,7 +38,7 @@ class Qualpay {
 	protected static $instance = null;
 
 	/** plugin version */
-	const VERSION = '3.0.5';
+	const VERSION = '3.0.9';
 
 	/** plugin text domain */
 	const TEXT_DOMAIN = 'qualpay';

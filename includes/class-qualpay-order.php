@@ -34,9 +34,9 @@ class Qualpay_Order {
 		//add status for partial refund
 		add_action( 'init', array( $this,'register_awaiting_shipment_order_status') );
 		add_filter( 'wc_order_statuses', array( $this,'add_awaiting_shipment_to_order_statuses') );
-		//end
+		//end		
 	}
-	
+
 
 	function register_awaiting_shipment_order_status($wc_statuses_arr1) {
 		
@@ -91,21 +91,7 @@ class Qualpay_Order {
 	}
 	 
 	
-	public function cfwc_cart_item_name( $name, $cart_item, $cart_item_key ) {
-		$product_id = $cart_item->get_product_id();
-		$product_name = $cart_item->get_name();
-		if ( Qualpay_Cart::is_product_recurring( $product_id) ) {
-			 $item_name = $product_name;	
-			$item_name .= '<br><b>( Recurring Product )</b>';
-		} else {
-			$item_name = $product_name;
-		}
-		return $item_name;
-	}
-
-	
 	function update_mp_sync_on_product_save( $meta_id, $post_id, $meta_key, $meta_value ) {
-		
 		if ($meta_key == '_order_total' ) {	 // we've been editing the post
 			$signup_fee1 = 0;
 			$order = wc_get_order( $post_id );
@@ -178,9 +164,9 @@ class Qualpay_Order {
 				}
 			}
 		}
-
 		
-		if($order_data['status'] != '')  { ?>
+		//if($order_data['status'] != '')  { 
+			if( $total <= 0 ) { ?>
 			<script>
       			jQuery(function () {
 					jQuery('.refund-items').hide();

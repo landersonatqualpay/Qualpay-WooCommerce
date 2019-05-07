@@ -247,6 +247,10 @@ class Qualpay_API {
 			$request['avs_zip'] = $args['avs_zip'];
 		}
 
+		if ( isset( $args['customer_id'] ) ) {
+			$request['customer_id'] = $args['customer_id'];
+		}
+
 		$debug = $request;
 		unset( $debug['card_number'] );
 		unset( $debug['exp_date'] );
@@ -380,7 +384,6 @@ class Qualpay_API {
 	
 		$request = array();
 		$request['merchant_id']  = self::get_merchant_id();
-		$request['sandbox_merchant_id']  = self::get_sandbox_merchant_id();
 		$request['developer_id'] = self::get_user_agent();
 
 		if ( isset( $args['pg_id'] ) ) {
@@ -392,7 +395,7 @@ class Qualpay_API {
 			$request['amt_tran'] = $args['amt_tran'];
 		}
 
-		if ( ! isset( $args['tran_currency'] ) ) {
+		/*if ( ! isset( $args['tran_currency'] ) ) {
 			$args['tran_currency'] = get_woocommerce_currency();
 		}
 
@@ -402,14 +405,14 @@ class Qualpay_API {
 
 		if ( isset( $args['avs_zip'] ) ) {
 			$request['avs_zip'] = $args['avs_zip'];
-		}
+		} 
 
 		$request['tran_currency'] = self::currency_iso_numeric( $args['tran_currency'] );
 
 		if ( ! $request['tran_currency'] ) {
 			self::log( 'Error Response: ' . sprintf( __( 'Currency ISO Numeric Code not found for %s', 'qualpay' ) , $args['tran_currency'] ) );
 			return new WP_Error( 'qualpay_error', __( 'Currency ISO Numeric Code not found.', 'qualpay' ) );
-		}
+		} */
 
 		$debug = $request;
 
@@ -524,7 +527,10 @@ class Qualpay_API {
 		if ( isset( $args['tokenize'] ) ) {
 			$request['tokenize'] = $args['tokenize'];
 		}
-
+		
+		if ( isset( $args['customer_id'] ) ) {
+			$request['customer_id'] = $args['customer_id'];
+		}
 		$debug = $request;
 
 		unset( $debug['card_number'] );
@@ -1302,13 +1308,12 @@ class Qualpay_API {
 	 * @return mixed
 	 */
 	public static function create_customer( $args ) {
-		
 		$endpoint = untrailingslashit( self::get_endpoint( 'platform/vault/customer' ) );
 
-		if ( ! isset( $args['customer_id'] ) || '' === $args['customer_id'] ) {
-			self::log( 'Error Response: ' . __( 'No Customer ID set when creating a customer.', 'qualpay' ) );
-			return new WP_Error( 'qualpay_error', __( 'Could not create a Customer.', 'qualpay' ) );
-		}
+		// if ( ! isset( $args['customer_id'] ) || '' === $args['customer_id'] ) {
+		// 	self::log( 'Error Response: ' . __( 'No Customer ID set when creating a customer.', 'qualpay' ) );
+		// 	return new WP_Error( 'qualpay_error', __( 'Could not create a Customer.', 'qualpay' ) );
+		// }
 
 		if ( ! isset( $args['customer_first_name'] ) || '' === $args['customer_first_name'] ) {
 			self::log( 'Error Response: ' . __( 'No Customer First Name set when creating a customer.', 'qualpay' ) );
@@ -1322,7 +1327,6 @@ class Qualpay_API {
 
 		$request = $args;
 		$request['merchant_id']  = self::get_merchant_id();
-		$request['sandbox_merchant_id']    = self::get_sandbox_merchant_id();
 		$request['developer_id'] = self::get_user_agent();
 
 		$response = wp_safe_remote_post(
@@ -1616,4 +1620,214 @@ class Qualpay_API {
 		return isset( $currencies[ $alpha ] ) ? $currencies[ $alpha ] : false;
 	}
 
+	/**
+	 * Send the request to the Qualpay API
+	 *
+	 * @param array $args
+	 * @return array|mixed|object|WP_Error
+	 */
+	public static function get_customer_billing_cards( $customer_id, $merchant_id ) {
+		
+		$endpoint = untrailingslashit( self::get_endpoint( 'platform/vault/customer' ) );
+	
+		$response = wp_safe_remote_get(
+			$endpoint . '/'.$customer_id.'/billing?merchant_id='.$merchant_id,
+			array(
+				'method'        => 'GET',
+				'headers'       => array(
+					'Authorization'  => 'Basic ' . base64_encode( self::get_security_key() . ':' ),
+					'Content-type'   => 'application/json',
+				),
+				'body'       => json_encode( $request ),
+				'timeout'    => 70,
+				'user-agent' => self::get_user_agent(),
+			)
+		);
+
+		if ( is_wp_error( $response ) || empty( $response['body'] ) ) {
+			self::log( 'Error Response: ' . print_r( $response, true ) );
+			return new WP_Error( 'qualpay_error', __( 'There was a problem connecting to the payment gateway.', 'qualpay' ) );
+		}
+
+		$parsed_response = json_decode( $response['body'] );
+		// Handle response
+		if ( ! empty( $parsed_response->error ) ) {
+			if ( ! empty( $parsed_response->error->code ) ) {
+				$code = $parsed_response->error->code;
+			} else {
+				$code = 'qualpay_error';
+			}
+			return new WP_Error( $code, $parsed_response->error->message );
+		} else {
+			return $parsed_response;
+		}
+
+	}
+
+	/**
+	 * Send the request to the Qualpay API
+	 *
+	 * @param array $args
+	 * @return array|mixed|object|WP_Error
+	 */
+	public static function add_customer_billing_cards( $args) {
+		$request =  array();
+
+		if ( isset( $args['card_id'] ) ) {
+			$request['card_id'] = $args['card_id'];
+		}
+
+		if ( isset( $args['billing_zip'] ) ) {
+			$request['billing_zip'] = $args['billing_zip'];
+		}
+
+		if ( isset( $args['billing_first_name'] ) ) {
+			$request['billing_first_name'] = $args['billing_first_name'];
+		}
+
+		if ( isset( $args['billing_last_name'] ) ) {
+			$request['billing_last_name'] = $args['billing_last_name'];
+		}
+
+		$endpoint = untrailingslashit( self::get_endpoint( 'platform/vault/customer' ) );
+	
+		$response = wp_safe_remote_post(
+			$endpoint . '/'.$args['customer_id'].'/billing',
+			array(
+				'method'        => 'POST',
+				'headers'       => array(
+					'Authorization'  => 'Basic ' . base64_encode( self::get_security_key() . ':' ),
+					'Content-type'   => 'application/json',
+				),
+				'body'       => json_encode( $request ),
+				'timeout'    => 70,
+				'user-agent' => self::get_user_agent(),
+			)
+		);
+
+		if ( is_wp_error( $response ) || empty( $response['body'] ) ) {
+			self::log( 'Error Response: ' . print_r( $response, true ) );
+			return new WP_Error( 'qualpay_error', __( 'There was a problem connecting to the payment gateway.', 'qualpay' ) );
+		}
+
+		$parsed_response = json_decode( $response['body'] );
+		
+		// Handle response
+		if ( ! empty( $parsed_response->error ) ) {
+			if ( ! empty( $parsed_response->error->code ) ) {
+				$code = $parsed_response->error->code;
+			} else {
+				$code = 'qualpay_error';
+			}
+			return new WP_Error( $code, $parsed_response->error->message );
+		} else {
+			return $parsed_response;
+		}
+
+	}
+
+		/**
+	 * Send the request to the Qualpay API
+	 *
+	 * @param array $args
+	 * @return array|mixed|object|WP_Error
+	 */
+	public static function update_customer_billing_cards( $args) {
+		$request =  array();
+
+		if ( isset( $args['card_id'] ) ) {
+			$request['card_id'] = $args['card_id'];
+		}
+
+		if ( isset( $args['billing_zip'] ) ) {
+			$request['billing_zip'] = $args['billing_zip'];
+		}
+
+		if ( isset( $args['billing_first_name'] ) ) {
+			$request['billing_first_name'] = $args['billing_first_name'];
+		}
+
+		if ( isset( $args['billing_last_name'] ) ) {
+			$request['billing_last_name'] = $args['billing_last_name'];
+		}
+		// if ( isset( $args['customer_id'] ) ) {
+		// 	$request['customer_id'] = $args['customer_id'];
+		// }
+		if ( isset( $args['merchant_id'] ) ) {
+			$request['merchant_id'] = $args['merchant_id'];
+		}
+
+		$endpoint = untrailingslashit( self::get_endpoint( 'platform/vault/customer' ) );
+		$http= new WP_Http();	
+			
+		$response = $http->request(
+			$endpoint . '/'.$args['customer_id'].'/billing',
+			array(
+				'method'        => 'PUT',
+				'headers'       => array(
+					'Authorization'  => 'Basic ' . base64_encode( self::get_security_key() . ':' ),
+					'Content-type'   => 'application/json',
+				),
+				'body'       => json_encode( $request ),
+				'timeout'    => 70,
+				'user-agent' => self::get_user_agent(),
+			)
+		);
+
+		if ( is_wp_error( $response ) || empty( $response['body'] ) ) {
+			self::log( 'Error Response: ' . print_r( $response, true ) );
+			return new WP_Error( 'qualpay_error', __( 'There was a problem connecting to the payment gateway.', 'qualpay' ) );
+		}
+
+		$parsed_response = json_decode( $response['body'] );
+		
+		// Handle response
+		if ( ! empty( $parsed_response->error ) ) {
+			if ( ! empty( $parsed_response->error->code ) ) {
+				$code = $parsed_response->error->code;
+			} else {
+				$code = 'qualpay_error';
+			}
+			return new WP_Error( $code, $parsed_response->error->message );
+		} else {
+			return $parsed_response;
+		}
+
+	}
+	function get_merchant_settings($merchant_id)
+	{
+		$endpoint = untrailingslashit( self::get_endpoint( 'platform/vendor/settings' ) );
+	
+		$response = wp_safe_remote_get(
+			$endpoint . '/'.$merchant_id,
+			array(
+				'method'        => 'GET',
+				'headers'       => array(
+					'Authorization'  => 'Basic ' . base64_encode( self::get_security_key() . ':' ),
+					'Content-type'   => 'application/json',
+				),
+			//	'body'       => json_encode( $request ),
+				'timeout'    => 70,
+				'user-agent' => self::get_user_agent(),
+			)
+		);
+
+		if ( is_wp_error( $response ) || empty( $response['body'] ) ) {
+			self::log( 'Error Response: ' . print_r( $response, true ) );
+			return new WP_Error( 'qualpay_error', __( 'There was a problem connecting to the payment gateway.', 'qualpay' ) );
+		}
+
+		$parsed_response = json_decode( $response['body'] );
+		// Handle response
+		if ( ! empty( $parsed_response->error ) ) {
+			if ( ! empty( $parsed_response->error->code ) ) {
+				$code = $parsed_response->error->code;
+			} else {
+				$code = 'qualpay_error';
+			}
+			return new WP_Error( $code, $parsed_response->error->message );
+		} else {
+			return $parsed_response;
+		}
+	}
 }

@@ -1,10 +1,8 @@
 <?php
 
 /**
- * Created by PhpStorm.
- * User: igor
- * Date: 10/05/18
- * Time: 00:38
+ * Created by Qualpay.
+ * User: Jankee
  */
 class QualPay_Webhook {
 
@@ -37,7 +35,7 @@ class QualPay_Webhook {
 		$api  = new Qualpay_API();
 		//$body   = json_decode( $body );
 		
-			//$secret = '0b63b5aeb5fc11e8b4b20aaca8f8c8fa';
+			//$secret = 'f47bc414847211e89a450aaca8f8c8fa';
 			//echo $computed = base64_encode(hash_hmac('sha256', $body, $secret, true));
 			//exit;
 
@@ -64,8 +62,8 @@ class QualPay_Webhook {
 					//print_R($data);
 					//assign variables
 					$plan_id = $data['plan_id'];
-					$subscription_id = $data['subscription_id'];
-					$customer_id = $data['customer_id'];
+					$subscription_id = $data['subscription_id']; 
+					$customer_id = $data['customer_id']; 
 					$pg_id = $data['pg_id'];
 					$rcode = $data['rcode'];
 					$amt_tran = $data['amt_tran'];
@@ -163,62 +161,65 @@ class QualPay_Webhook {
 						'postcode'   => $shipping_postcode,
 						'country'    => $shipping_country
 					);
-					if(isset($order)) {
-						$items = $order->get_items();
-					}
-					foreach ( $items as $item ) {
-						//echo "aa";
-						$product_name = $item['name'];
-						$product_id = $item['product_id'];
-						$plan_data = get_post_meta( $product_id, '_qualpay_plan_data');
-							$product_plan_id = $plan_data[0]->plan_id;
-							if($product_plan_id == $plan_id) {
-								//get product id for adding product into new order.
-								$get_order_product_id = $product_id;
-							}
-					}
-
-					//with customer detail 
-					if($user_id) {
-						$order = wc_create_order(array('customer_id' => $user_id));
-					} else {
-						$order = wc_create_order();
-					}
-					$order->add_product( get_product( $get_order_product_id ), 1 ); //(get_product with id and next is for quantity)
-					$order->set_address( $billing_address, 'billing' );
-					$order->set_address( $shipping_address, 'shipping' );
-					$order->calculate_totals();
 					
-					$order_id = $order->id;
-					if ($pg_id) {
-						add_post_meta($order_id, '_qualpay_pg_id', $pg_id);
-						add_post_meta($order_id, '_qualpay_subscription_id', $subscription_id);
-						add_post_meta($order_id, '_qualpay_subscription_data', $data);
-						add_post_meta($order_id, '_qualpay_subscription_customer_id', $customer_id);
-				  	}
-					// status managing for orders
-					if($trans_status == 'A') {
-						$order->update_status("processing", 'Recurring Product Order.', TRUE);
-						$order->add_order_note( __( 'Order(Subscription-payment) added from Qualpay.', 'qualpay' ) );
+					if($order_id) {
+						$items = $order->get_items();
+						if($items) {
+							foreach ( $items as $item ) {
+								//echo "aa";
+								$product_name = $item['name'];
+								$product_id = $item['product_id'];
+								$plan_data = get_post_meta( $product_id, '_qualpay_plan_data');
+									$product_plan_id = $plan_data[0]->plan_id;
+									if($product_plan_id == $plan_id) {
+										//get product id for adding product into new order.
+										$get_order_product_id = $product_id;
+									}
+							}
+						}
+
+						//with customer detail 
+						if($user_id) {
+							$order = wc_create_order(array('customer_id' => $user_id));
+						} else {
+							$order = wc_create_order();
+						}
+						$order->add_product( get_product( $get_order_product_id ), 1 ); //(get_product with id and next is for quantity)
+						$order->set_address( $billing_address, 'billing' );
+						$order->set_address( $shipping_address, 'shipping' );
+						$order->calculate_totals();
+						
+						$order_id = $order->id;
+						if ($pg_id) {
+							add_post_meta($order_id, '_qualpay_pg_id', $pg_id);
+							add_post_meta($order_id, '_qualpay_subscription_id', $subscription_id);
+							add_post_meta($order_id, '_qualpay_subscription_data', $data);
+							add_post_meta($order_id, '_qualpay_subscription_customer_id', $customer_id);
+						}
+						// status managing for orders
+						if($trans_status == 'A') {
+							$order->update_status("processing", 'Recurring Product Order.', TRUE);
+							$order->add_order_note( __( 'Order(Subscription-payment) added from Qualpay.', 'qualpay' ) );
+						}
+
+						if($options['testmode'] == 'no') {
+							$mid =Qualpay_API::get_merchant_id();
+							$order->add_order_note( __( 'This is a Production order.('.$mid.')', 'qualpay' ) );
+						} else {
+							$iniFilename = QUALPAY_PATH."qp.txt";
+							$env_name = "test";
+							if( file_exists($iniFilename) ) {
+								$props = parse_ini_file ($iniFilename);
+								if( !empty($props['host']) ) {
+									$env_name = $props['host'];
+									$env_name = strtoupper($env_name);
+								}
+							}
+							$mid =Qualpay_API::get_merchant_id();
+							$order->add_order_note( __( 'This is a '.$env_name.' order.('.$mid.')', 'qualpay' ) );
+						}
+					
 					}
-
-					if($options['testmode'] == 'no') {
-                        $mid =Qualpay_API::get_merchant_id();
-                        $order->add_order_note( __( 'This is a Production order.('.$mid.')', 'qualpay' ) );
-                    } else {
-                        $iniFilename = QUALPAY_PATH."qp.txt";
-                        $env_name = "test";
-                        if( file_exists($iniFilename) ) {
-                            $props = parse_ini_file ($iniFilename);
-                            if( !empty($props['host']) ) {
-								$env_name = $props['host'];
-								$env_name = strtoupper($env_name);
-                            }
-                        }
-                        $mid =Qualpay_API::get_merchant_id();
-                        $order->add_order_note( __( 'This is a '.$env_name.' order.('.$mid.')', 'qualpay' ) );
-                    }
-
 				}
 
 				// capture and cancel payment sucess so changing order status according to order id.
@@ -298,29 +299,30 @@ class QualPay_Webhook {
 						$order_total = $order->get_total();
 					} */
 					$amt_tran = abs($data['amt_tran']);
-			
-					$remaining_refund_amount = $order->get_remaining_refund_amount(); 
+					if($order_id) { 
+						$remaining_refund_amount = $order->get_remaining_refund_amount(); 
 					
-					if($remaining_refund_amount >= $amt_tran) {
-						$args = array(
-							'order_id'		=>	$order_id,
-							'amount'	=>	$amt_tran
-							//'reason'		=>	$body_array['event']
-						);
-						$result = wc_create_refund($args);
-						
-						if('000' === $data['rcode']) {
-							$remaining_refund_amount1 = $order->get_remaining_refund_amount();
-							if($remaining_refund_amount1 > 0) {
-								$order->update_status('partial-refund', __('Order Payment Partial Refunded.', 'qualpay'));	
-							}  else {
-								//update_post_meta($order_id, '_qualpay_pg_id', $data['pg_id'], $data['pg_id_linked']);
-								$order->update_status('refunded', __('Order Payment Refunded.', 'qualpay'));	
+						if($remaining_refund_amount >= $amt_tran) {
+							$args = array(
+								'order_id'		=>	$order_id,
+								'amount'	=>	$amt_tran
+								//'reason'		=>	$body_array['event']
+							);
+							$result = wc_create_refund($args);
+							
+							if('000' === $data['rcode']) {
+								$remaining_refund_amount1 = $order->get_remaining_refund_amount();
+								if($remaining_refund_amount1 > 0) {
+									$order->update_status('partial-refund', __('Order Payment Partial Refunded.', 'qualpay'));	
+								}  else {
+									//update_post_meta($order_id, '_qualpay_pg_id', $data['pg_id'], $data['pg_id_linked']);
+									$order->update_status('refunded', __('Order Payment Refunded.', 'qualpay'));	
+								}
+								//
 							}
-							//
 						}
-						
 					}
+					
 				}
 
 				if($body_array['event'] == 'transaction_status_updated') {
@@ -347,15 +349,16 @@ class QualPay_Webhook {
 								$order = wc_get_order(  $order_id );
 								/*if (isset($order)) {
 									$order_total = $order->get_total();
-								}*/
-								$get_remaining_refund_amount = $order->get_remaining_refund_amount();
-								if($get_remaining_refund_amount <= $amt_tran) {
-									$order->update_status('completed', __('Order Payment Settled.', 'qualpay'));
+								} */
+								if($order_id) {
+									$get_remaining_refund_amount = $order->get_remaining_refund_amount();
+									if($get_remaining_refund_amount <= $amt_tran) {
+										$order->update_status('completed', __('Order Payment Settled.', 'qualpay'));
+									}
 								}
 							}
 						}
 					}
-					
 				}
 			
 			}

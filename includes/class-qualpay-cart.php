@@ -26,7 +26,7 @@ class Qualpay_Cart {
 		// change subtotal for product
 		add_filter( 'woocommerce_cart_item_subtotal', array( $this,'filter_woocommerce_cart_item_subtotal' ), 10, 3 ); 
 		
-		add_filter('woocommerce_checkout_update_customer_data', '__return_false' );
+	//	add_filter('woocommerce_checkout_update_customer_data', '__return_false' );
 		 
 	}
 
@@ -79,7 +79,7 @@ class Qualpay_Cart {
 					
 					$original_name = method_exists( $values['data'], 'get_name' ) ?  $values['data']->post->post_title : $values['data']->post->post_title;
 					$original_price = method_exists( $values['data'], 'get_price' ) ? $values['data']->get_price() : $values['data']->post->post_title;
-					$new_name = $original_name ."<br><b> (Your first billing of $".$original_price." on your subscription's start date.)</b>";
+					$new_name = $original_name ."(Your first billing of $".$original_price." on your subscription's start date.)";
 						if( method_exists( $values['data'], 'set_name' ) ) {
 						
 							$values['data']->set_name( $new_name );
@@ -283,13 +283,26 @@ class Qualpay_Cart {
 		$in_cart = false;
 
 		if ( ! empty( WC()->cart->cart_contents )  ) {
-			foreach ( WC()->cart->cart_contents as $cart_item ) {
-				if( self::is_product_recurring( $cart_item['data']->get_id() ) ) {
-					$in_cart = true;
-					break;
+			$order_id_order_pay = absint( get_query_var( 'order-pay' ) );
+                if(!$order_id_order_pay) {
+					foreach ( WC()->cart->cart_contents as $cart_item ) {
+						if( self::is_product_recurring( $cart_item['data']->get_id() ) ) {
+							$in_cart = true;
+							break;
+						}
+					}
 				}
-			}
-		}
+				else {
+					$order = wc_get_order($order_id_order_pay);
+					$items = $order->get_items();
+					foreach ( $items as $cart_item ) {
+						if( self::is_product_recurring( $cart_item->get_product_id() ) ) {
+							$in_cart = true;
+							break;
+						}
+					}
+				}
+        }
 
 		return $in_cart;
 

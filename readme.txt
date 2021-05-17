@@ -3,15 +3,15 @@
 Contributors: developerqualpay
 Tags: Payment Gateway, Recurring Billing, Payment, Tokenization, Credit Cards
 Requires at least: 4.4.0
-Tested up to: 5.2
-Stable tag: 3.0.9
+Tested up to: 5.4.4
+Stable tag: 3.1.4
 Requires PHP: 7.0
-Version : 3.0.9
+Version : 3.1.4
 
 Qualpay Payment Plugin for WooCommerce is a complete payment solution for your WooCommerce Store.
 
 == Description ==
-Qualpay provides a merchant account and payment gateway with Customer Vault and Recurring Billing.  Get started with Qualpay today; https://www.qualpay.com/get-started.
+Qualpay provides a merchant account and payment gateway with Customer Vault and Recurring Billing.  Get started with Qualpay today; <a href="https://qualpay.com/get-started/woocommerce" target="_BLANK">https://qualpay.com/get-started/woocommerce</a>.
 
 == Installation ==
 Installing the Qualpay Plugin from the WordPress Dashboard
@@ -52,3 +52,13 @@ Bugfix: When Terms and Conditions acceptance is required ensure that the accepta
 3.0.9 Qualpay Customer Vault entries from WooCommerce will include a customer ID formatted as firstname+lastname+3 digit random number and the phone number and company name as input by your customer during checkout.
 ACH Payments are now supported.  Contact Qualpay at support@qualpay.com to have ACH enabled on your account.  You must use “capture charge immediately” to process ACH payments through WooCommerce.
 Customers can now pay with a saved card-on-file.  If you enable cards-on-file your customer will be presented with a “Save Card” checkbox.  Upon the next checkout, the saved card will be presented as a payment option.  Not available for guest checkout, and we do recommend that you enforce strong passwords if you decide to opt-in to this feature.
+
+3.1 bugFix for count total on variable product add in manual order create.
+
+3.1.1 Refund button only displays when applicable, added support for daily recurring plans and subscriptions, optional requirement to collect CVV for customers paying with a saved card-on-file, added support for manual orders that include a fee but not a product line item, and partial captures from Qualpay Manager are now accurately reflected in the WooCommerce order history.
+
+3.1.2 Updated subscriptions  to comply with Visa and MasterCard regulations for Negative Option Billing. Resolved any Qualpay Plugin conflicts with updates.
+
+3.1.3 Bug fix for shipping charge.
+
+3.1.4 Support google Advanced noCaptcha & invisible Captcha version 6.1.5 plugin

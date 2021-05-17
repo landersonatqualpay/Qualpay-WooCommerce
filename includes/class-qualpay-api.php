@@ -204,7 +204,6 @@ class Qualpay_API {
 
 		$request = array();
 		$request['merchant_id']  = self::get_merchant_id();
-		$request['sandbox_merchant_id']  = self::get_sandbox_merchant_id();
 		$request['developer_id'] = self::get_user_agent();
 
 		if ( isset( $args['card_id'] ) ) {
@@ -221,6 +220,17 @@ class Qualpay_API {
 		}
 		if ( isset( $args['cardholder_name'] ) ) {
 			$request['cardholder_name'] = $args['cardholder_name'];
+		}
+		
+		if ( ! isset( $args['tran_currency'] ) ) {
+			$args['tran_currency'] = get_woocommerce_currency();
+		}
+
+		$request['tran_currency'] = self::currency_iso_numeric( $args['tran_currency'] );
+
+		if ( ! $request['tran_currency'] ) {
+			self::log( 'Error Response: ' . sprintf( __( 'Currency ISO Numeric Code not found for %s', 'qualpay' ) , $args['tran_currency'] ) );
+			return new WP_Error( 'qualpay_error', __( 'Currency ISO Numeric Code not found.', 'qualpay' ) );
 		}
 
 		if ( isset( $args['cvv2'] ) ) {
@@ -249,6 +259,10 @@ class Qualpay_API {
 
 		if ( isset( $args['customer_id'] ) ) {
 			$request['customer_id'] = $args['customer_id'];
+		}
+
+		if ( isset( $args['line_items'] ) ) {
+			$request['line_items'] = $args['line_items'];
 		}
 
 		$debug = $request;
@@ -306,7 +320,6 @@ class Qualpay_API {
 
 		$request = array();
 		$request['merchant_id']  = self::get_merchant_id();
-		$request['sandbox_merchant_id']  = self::get_sandbox_merchant_id();
 		$request['developer_id'] = self::get_user_agent();
 
 		if ( isset( $args['pg_id'] ) ) {
@@ -469,7 +482,6 @@ class Qualpay_API {
 
 		$request = array();
 		$request['merchant_id']    = self::get_merchant_id();
-		$request['sandbox_merchant_id']    = self::get_sandbox_merchant_id();
 		$request['moto_ecomm_ind'] = 7;
 		$request['developer_id']   = self::get_user_agent();
 
@@ -531,6 +543,11 @@ class Qualpay_API {
 		if ( isset( $args['customer_id'] ) ) {
 			$request['customer_id'] = $args['customer_id'];
 		}
+
+		if ( isset( $args['line_items'] ) ) {
+			$request['line_items'] = $args['line_items'];
+		}
+
 		$debug = $request;
 
 		unset( $debug['card_number'] );
@@ -1025,7 +1042,6 @@ class Qualpay_API {
 
 		$request = $args;
 		$request['merchant_id']  = self::get_merchant_id();
-		$request['sandbox_merchant_id']  = self::get_sandbox_merchant_id();
 		$request['developer_id'] = self::get_user_agent();
 
 		if ( ! isset( $request['plan_id'] ) ) {
@@ -1131,11 +1147,11 @@ class Qualpay_API {
 	 * @param array $args Arguments.
 	 */
 	public static function update_plan( $args ) {
+
 		$endpoint = self::get_endpoint( 'platform/plan' );
 
 		$request = $args;
 		$request['merchant_id']  = self::get_merchant_id();
-		$request['sandbox_merchant_id']    = self::get_sandbox_merchant_id();
 		$request['developer_id'] = self::get_user_agent();
 
 		if ( ! isset( $request['plan_code'] ) ) {
@@ -1146,7 +1162,7 @@ class Qualpay_API {
 		$endpoint = untrailingslashit( $endpoint ) . '/' . $request['plan_code'];
 
 		$debug = $request;
-
+		
 		self::log( 'update_plan request: ' . "\n" .
 		           'endpoint: ' . $endpoint . "\n" .
 		           print_r ( $debug, true ) );
@@ -1638,7 +1654,6 @@ class Qualpay_API {
 					'Authorization'  => 'Basic ' . base64_encode( self::get_security_key() . ':' ),
 					'Content-type'   => 'application/json',
 				),
-				'body'       => json_encode( $request ),
 				'timeout'    => 70,
 				'user-agent' => self::get_user_agent(),
 			)
@@ -1671,24 +1686,6 @@ class Qualpay_API {
 	 * @return array|mixed|object|WP_Error
 	 */
 	public static function add_customer_billing_cards( $args) {
-		$request =  array();
-
-		if ( isset( $args['card_id'] ) ) {
-			$request['card_id'] = $args['card_id'];
-		}
-
-		if ( isset( $args['billing_zip'] ) ) {
-			$request['billing_zip'] = $args['billing_zip'];
-		}
-
-		if ( isset( $args['billing_first_name'] ) ) {
-			$request['billing_first_name'] = $args['billing_first_name'];
-		}
-
-		if ( isset( $args['billing_last_name'] ) ) {
-			$request['billing_last_name'] = $args['billing_last_name'];
-		}
-
 		$endpoint = untrailingslashit( self::get_endpoint( 'platform/vault/customer' ) );
 	
 		$response = wp_safe_remote_post(
@@ -1699,7 +1696,7 @@ class Qualpay_API {
 					'Authorization'  => 'Basic ' . base64_encode( self::get_security_key() . ':' ),
 					'Content-type'   => 'application/json',
 				),
-				'body'       => json_encode( $request ),
+				'body'       => json_encode( $args ),
 				'timeout'    => 70,
 				'user-agent' => self::get_user_agent(),
 			)
@@ -1733,30 +1730,6 @@ class Qualpay_API {
 	 * @return array|mixed|object|WP_Error
 	 */
 	public static function update_customer_billing_cards( $args) {
-		$request =  array();
-
-		if ( isset( $args['card_id'] ) ) {
-			$request['card_id'] = $args['card_id'];
-		}
-
-		if ( isset( $args['billing_zip'] ) ) {
-			$request['billing_zip'] = $args['billing_zip'];
-		}
-
-		if ( isset( $args['billing_first_name'] ) ) {
-			$request['billing_first_name'] = $args['billing_first_name'];
-		}
-
-		if ( isset( $args['billing_last_name'] ) ) {
-			$request['billing_last_name'] = $args['billing_last_name'];
-		}
-		// if ( isset( $args['customer_id'] ) ) {
-		// 	$request['customer_id'] = $args['customer_id'];
-		// }
-		if ( isset( $args['merchant_id'] ) ) {
-			$request['merchant_id'] = $args['merchant_id'];
-		}
-
 		$endpoint = untrailingslashit( self::get_endpoint( 'platform/vault/customer' ) );
 		$http= new WP_Http();	
 			
@@ -1768,7 +1741,7 @@ class Qualpay_API {
 					'Authorization'  => 'Basic ' . base64_encode( self::get_security_key() . ':' ),
 					'Content-type'   => 'application/json',
 				),
-				'body'       => json_encode( $request ),
+				'body'       => json_encode( $args ),
 				'timeout'    => 70,
 				'user-agent' => self::get_user_agent(),
 			)
@@ -1794,7 +1767,8 @@ class Qualpay_API {
 		}
 
 	}
-	function get_merchant_settings($merchant_id)
+	
+	public static function get_merchant_settings($merchant_id)
 	{
 		$endpoint = untrailingslashit( self::get_endpoint( 'platform/vendor/settings' ) );
 	

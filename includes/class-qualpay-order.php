@@ -74,19 +74,6 @@ class Qualpay_Order {
 		$wc_statuses_arr['wc-completed'] = 'Settled (Completed)';
 		$wc_statuses_arr['wc-cancelled'] = 'Void (Canceled)';
 		$wc_statuses_arr['wc-on-hold'] = 'Authorized (On-Hold)';
-		
-	/*	$new_statuses_arr = array(
-			'wc-processing' => $wc_statuses_arr['wc-processing'], // 1
-			'wc-completed' => $wc_statuses_arr['wc-completed'], // 2
-			'wc-cancelled' => $wc_statuses_arr['wc-cancelled'], // 3
-			'wc-refunded' => $wc_statuses_arr['wc-refunded'], // 4
-			'wc-failed' => $wc_statuses_arr['wc-failed'], // 5
-			'wc-pending' => $wc_statuses_arr['wc-pending'], // 6
-			'wc-on-hold' => $wc_statuses_arr['wc-on-hold'] // 7
-		); */
-	 ?>
-	 		
-			<?php
 		return $wc_statuses_arr;
 	}
 	 
@@ -111,12 +98,8 @@ class Qualpay_Order {
 						}
 					}
 			}
-			if ( $signup_fee1 > 0 ) { ?>
-					<script>window.alert("This order includes set up fee. Set up fees are not supported for manual order creation.");
-					</script>
-				<?php
+			if ( $signup_fee1 > 0 ) { ?><script>window.alert("This order includes set up fee. Set up fees are not supported for manual order creation. it will auto run from Qualpay.");</script><?php
 			}
-			
 		}	
 	}
 
@@ -132,7 +115,6 @@ class Qualpay_Order {
 		$order_id = version_compare( WC_VERSION, '3.0.0', '<' ) ? $theorder->id : $theorder->get_id();
 		$order = wc_get_order( $order_id );
 		$order_data = $order->get_data();
-		$order_status = $order_data['status'];
 		$total = $order->get_total();
 		$remaining_refund_amount = $order->get_remaining_refund_amount();
 		if($order_data['status'] == 'on-hold')  {
@@ -165,15 +147,15 @@ class Qualpay_Order {
 			}
 		}
 		
-		//if($order_data['status'] != '')  { 
-			if( $total <= 0 ) { ?>
+		if($order_data['status'] != 'completed')  { 
+		//	if( $total <= 0 ) { ?>
 			<script>
       			jQuery(function () {
 					jQuery('.refund-items').hide();
 				  });
 			</script>
-		<?php }
-		
+		<?php // }
+		}
 		return $actions;
 	}
 
@@ -356,3 +338,4 @@ class Qualpay_Order {
 }
 
 new Qualpay_Order();
+?>

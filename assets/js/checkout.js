@@ -1,6 +1,4 @@
 'use strict';
-
-
 (function($){
     var token_used = false;
     var capture_id = $("#capture_id").val();
@@ -28,45 +26,41 @@
                       console.log("Display ", data.type);
                       if(data.type == 'ACH') {
                         $("#ach_container").show();
-                        $("#save_card").hide(); 
+                     //   $("#save_card").hide(); 
                       } else {
                         $("#ach_container").hide(); 
-                        $("#save_card").show(); 
+                      //  $("#save_card").show(); 
                       }
                     }
                   },
                 onSuccess: function( data ) {
-                    console.log('success here');
-                    // console.log(data);
-                    // alert(data);
                     $('#qualpay_card_id').val( data.card_id );
 
                     token_used = true;
                     form.submit();
                 },
                 onError: function( error ) {
-                    console.log('error');
-                    if( error.detail ) {
+                    if( error.code == 2 ) {
                         for( var key in error.detail ) {
-                            console.log( error.detail[key] );
                             alert(error.detail[key]);
                             return false;
-                            //alert('There was an issue processing your transaction.  Please check the card details and try again.' );
                         }
+                    } else {
+                        alert('There was an issue processing your transaction.  Please check the card details and try again.');
+                        return false;
                     }
                 }
             }
-        );
-    
-        
-       
+        );   
     }
 
     function preSubmit()
         {
             var url      = window.location.href; 
-            var matches = url.match(/\/order-pay\/(.*)$/);
+            //var matches = url.match(/\/order\-pay\/(.*)$/);
+            var matches = url.match(/order-pay/);
             if (!matches) {
+                
                 var billing_first_name  = $('#billing_first_name');
                 var billing_last_name   = $('#billing_last_name');
                 var billing_country     = $('#billing_country');
@@ -79,18 +73,13 @@
                 var account_username    = $('#account_username');
                 var account_password    = $('#account_password');
 
-                // else if($('input[name="ach_authorize"]:checked').length == '1'){
-                //     alert("ach_authorize");
-                // }
-
-
-                //alert( $('#account_username').is(":visible"));
-            //  var name_regex = '/^[a-zA-Z]+$/';
                 var email_regex = /^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$/;
-            //  var add_regex = '/^[0-9a-zA-Z]+$/';
                 var zip_regex = /(^\d{5}$)|(^\d{5}-\d{4}$)/;
-                var phone_regex = /^[0-9\-\(\)\s]+/;
-                //alert(typeof billing_first_name);
+             //  var phone_regex = /^[0-9\-\(\)\s]+/;
+                if ($('#g-recaptcha-response').length !== 0 && grecaptcha.getResponse() == '') {
+                    alert("Captcha is mandatory");
+                    return false;
+                } 
                 if ((typeof billing_first_name !== 'undefined') && (billing_first_name.val() == "")) {
                     alert("First name is mandatory"); 
                     $('.wpmc-step-payment').removeClass('current');
@@ -172,15 +161,15 @@
                     $("#billing_phone").focus();
                     return false;
                 }
-                else if (billing_phone.val() != "" && (!billing_phone.val().match(phone_regex) )) {
-                    alert("Please enter a valid Phone number "); 
-                    $('.wpmc-step-payment').removeClass('current');
-                    $('.wpmc-step-billing').addClass('current');
-                    $('#wpmc-prev').removeClass('current');
-                    $('#wpmc-next').addClass('current');
-                    $("#billing_phone").focus();
-                    return false;
-                }
+                // else if (billing_phone.val() != "" && (!billing_phone.val().match(phone_regex) )) {
+                //     alert("Please enter a valid Phone number "); 
+                //     $('.wpmc-step-payment').removeClass('current');
+                //     $('.wpmc-step-billing').addClass('current');
+                //     $('#wpmc-prev').removeClass('current');
+                //     $('#wpmc-next').addClass('current');
+                //     $("#billing_phone").focus();
+                //     return false;
+                // }
                 else if ((typeof billing_email !== 'undefined') && billing_email.val() == "") {
                     alert("Email address is mandatory"); 
                     $('.wpmc-step-payment').removeClass('current');
@@ -301,12 +290,17 @@
     $(function(){
         var form = $('form.checkout');
         var url      = window.location.href; 
-        var matches = url.match(/\/order-pay\/(.*)$/);
-     
+        // var regex = /order-pay/g;
+        //var found = url.match(regex);
+       // var matches = url.match(/\/order-pay\/(.*)$/);
+       var matches = url.match(/order-pay/g);
+        
+        //alert(found);
+
         if (matches) {
             form = $('form#order_review');
         } 
-       
+       //alert(form.length);
         if( form.length ) {
             var form_id = form.attr('id');
             if( ! form_id ) {
@@ -344,19 +338,27 @@
                 return true;
             });
         }
+
+        // if(($('input[name=createaccount]').is(":visible"))) {
+        //     $("#save_card").hide();
+        //     $('input[name="createaccount"]').change(function(){
+        //         if($(this).prop("checked") == true){
+        //             $("#save_card").show();
+        //         }
+        //         else if($(this).prop("checked") == false){
+        //             $("#save_card").hide();
+        //         }
+        //     });
+        // } 
     });
 
     function frame_load_with_conditions(form_id,form) {
         var payment = $('input[name=payment_method]');
         var method = $('input[name=payment_method]:checked');
         
-       
-       
-        if(method.val() == 'qualpay'){
+       if(method.val() == 'qualpay'){
             get_card_id(form_id,form);
-
-            
-         }
+        }
          payment.change(function() {
             if ('qualpay' == $(this).val() ) {
                 if ( ! token_used ) {
@@ -382,20 +384,27 @@
     function get_card_id(form_id, form) {
         var card_value = $('input[name=qp_payment_cards]:checked').val();
         var payment_card = $('input[name=qp_payment_cards]');
+        var elmId = $('input[name=qp_payment_cards]:checked').attr("id");
         if(($('input[name=qp_payment_cards]').is(":visible"))) {
+            if($('#cvvDiv').is(":visible")) {
+                $('#cvvDiv').remove();
+            }
             if(card_value == 'credit_card') {
                 qualpay_load_embedded( form_id, form );
             } else {
                 unload_frame();
                 $('#qualpay_card_id').val( card_value );
+                if((typeof $('#settingCVVon') != 'undefined') && ($('#settingCVVon').val()==1) && elmId != 'AP') {
+                    var $newdiv = '<div id="cvvDiv"><input type="text" id="cvv2" name="cvv2" placeholder="CVV" /></div>' ;
+                    $('input[name=qp_payment_cards]:checked').parent().append($newdiv);
+                }
             }
             payment_card.change(function() {
                 get_card_id(form_id,form);
             });
         } else {
             qualpay_load_embedded( form_id, form );
-        }
-        
+        }   
     }
     
 })(jQuery);

@@ -8,7 +8,7 @@ $plan_name = '';
 $plan_desc = '';
 $amt_tran  = 0;
 $plan_frequency = 0;
-$interval = 0;
+$interval = 1;
 $bill_specific_day = false;
 $day_of_week = 0;
 $month = 0;
@@ -19,6 +19,7 @@ $plan_duration = 0;
 $amt_setup = 0;
 $trial_duration = 0;
 $amt_trial = 0;
+$dba_suffix = '';
 
 if ( isset( $plan_object) && $plan_object ) {
     $plan_id   = $plan_object->plan_id;
@@ -37,7 +38,8 @@ if ( isset( $plan_object) && $plan_object ) {
     $plan_duration = $plan_object->plan_duration;
     $amt_setup = $plan_object->amt_setup;
 	$trial_duration = $plan_object->trial_duration;
-	$amt_trial = $plan_object->amt_trial;
+    $amt_trial = $plan_object->amt_trial;
+    $dba_suffix = $plan_object->dba_suffix;
 }
 
 
@@ -47,53 +49,54 @@ if ( isset( $plan_object) && $plan_object ) {
 	<tbody>
 	<tr valign="top">
 		<th>
-			<?php _e( 'Code', 'qualpay' ); ?>
+			<?php _e( 'Code', 'qualpay' ); ?> <span style="color:red">*</span>
 		</th>
 		<td>
-			<input type="text" value="<?php echo $plan_code; ?>" <?php if( $plan_code ) { echo 'disabled="disabled"'; } ?> name="qualpay_plan[code]" class="widefat" />
+			<input required type="text" value="<?php echo $plan_code; ?>" <?php if( $plan_code ) { echo "readonly"; } ?> name="qualpay_plan[code]" id="qualpay_plan_code" class="widefat" />
 		</td>
 	</tr>
 	<tr valign="top">
 		<th>
-			<?php _e( 'Name', 'qualpay' ); ?>
+			<?php _e( 'Name', 'qualpay' ); ?> <span style="color:red">*</span>
 		</th>
 		<td>
-			<input type="text" value="<?php echo $plan_name; ?>" <?php if( $plan_name ) { echo 'disabled="disabled"'; } ?> name="qualpay_plan[name]"  class="widefat" />
+			<input required type="text" value="<?php echo $plan_name; ?>" <?php if( $plan_name ) { echo "readonly"; } ?> name="qualpay_plan[name]" id="qualpay_plan_name" class="widefat" />
 		</td>
 	</tr>
 	<tr valign="top">
 		<th>
-			<?php _e( 'Description', 'qualpay' ); ?>
+			<?php _e( 'Description', 'qualpay' ); ?> <span style="color:red">*</span>
 		</th>
 		<td>
-			<textarea name="qualpay_plan[desc]"  class="widefat"><?php echo $plan_desc; ?></textarea>
+			<textarea name="qualpay_plan[desc]"  class="widefat" required><?php echo $plan_desc; ?></textarea>
 		</td>
 	</tr>
     <tr valign="top">
         <th>
-			<?php _e( 'Plan Amount', 'qualpay' ); ?>
+			<?php _e( 'Plan Amount', 'qualpay' ); ?> <span style="color:red">*</span>
         </th>
         <td>
-            <input type="number" step="0.01" value="<?php echo $amt_tran; ?>" name="qualpay_plan[amt_tran]" />
+            <input required type="number" step="0.01" min="0.01" value="<?php echo $amt_tran; ?>" name="qualpay_plan[amt_tran]" />
         </td>
     </tr>
 	<tr valign="top">
 		<th>
-			<label for="frequency"><?php _e( 'Frequency', 'qualpay' ); ?></label>
+			<label for="frequency"><?php _e( 'Frequency', 'qualpay' ); ?> <span style="color:red">*</span></label> 
 		</th>
 		<td>
-			<select id="frequency" name="qualpay_plan[frequency]">
-				<option <?php selected( $plan_frequency, 0, true ); ?> value="0"><?php _e( 'Weekly', 'qualpay' ); ?></option>
+			<select id="frequency" name="qualpay_plan[frequency]" required>
+                <option <?php selected( $plan_frequency, 0, true ); ?> value="0"><?php _e( 'Weekly', 'qualpay' ); ?></option>
 				<option <?php selected( $plan_frequency, 1, true ); ?> value="1"><?php _e( 'Bi-Weekly', 'qualpay' ); ?></option>
 				<option <?php selected( $plan_frequency, 3, true ); ?> value="3"><?php _e( 'Monthly', 'qualpay' ); ?></option>
 				<option <?php selected( $plan_frequency, 4, true ); ?> value="4"><?php _e( 'Quarterly', 'qualpay' ); ?></option>
 				<option <?php selected( $plan_frequency, 5, true ); ?> value="5"><?php _e( 'Bi-Annually', 'qualpay' ); ?></option>
 				<option <?php selected( $plan_frequency, 6, true ); ?> value="6"><?php _e( 'Annually', 'qualpay' ); ?></option>
+                <option <?php selected( $plan_frequency, 7, true ); ?> value="7"><?php _e( 'Daily', 'qualpay' ); ?></option>
 			</select>
-			<span data-show="0,3" class="interval">
+			<span data-show="0,3" class="interval" <?php if( $plan_frequency !== 0 || $plan_frequency !== 3 ) { echo 'style="display:none;"'; } ?>>
 				<label>
 					<?php _e( 'Every', 'qualpay' ); ?>
-					<input type="number" name="qualpay_plan[interval]"  style="width:auto"  min="1" max="99" value="<?php echo $interval; ?>"/>
+					<input type="number" name="qualpay_plan[interval]"  style="width:auto" value="<?php echo $interval; ?>"/>
 					<span data-show="0"><?php _e( 'Week(s)', 'qualpay' ); ?></span>
                     <span data-show="3" class="hidden"><?php _e( 'Month(s)', 'qualpay' ); ?></span>
 				</label>
@@ -107,7 +110,7 @@ if ( isset( $plan_object) && $plan_object ) {
 				</p>
 
                 <!-- HTML for Weekly and Bi-Weekly -->
-				<p data-show="0,1" <?php if( $plan_frequency !== 1 && $plan_frequency !== 0 ) { echo 'style="display:none;"'; } ?>>
+				<p data-show="0,1" <?php if( $plan_frequency !== 1 || $plan_frequency !== 0 ) { echo 'style="display:none;"'; } ?>>
 					<label>
 						<input <?php if( $plan_frequency === 1 || $plan_frequency === 0 ) { checked( true, $bill_specific_day, true ); } ?> type="radio" name="qualpay_plan[bill_specific_day]" value="true" />
 						<?php esc_html_e( 'On the same day every', 'qualpay' ); ?>
@@ -123,14 +126,13 @@ if ( isset( $plan_object) && $plan_object ) {
 						<option <?php selected( $day_of_week, 7, true ); ?> value="7"><?php _e( 'Saturday', 'qualpay' ); ?></option>
 					</select>
 				</p>
-
                 <p data-show="3,4,5,6" <?php if( $plan_frequency === 1 || $plan_frequency === 0 ) { echo 'style="display:none;"'; } ?>>
                     <label>
-                        <input <?php if( $plan_frequency !== 1 && $plan_frequency !== 0 ) { checked( true, $bill_specific_day, true ); } ?> type="radio" name="qualpay_plan[bill_specific_day]" value="true" />
+                        <input <?php if( $plan_frequency !== 1 || $plan_frequency !== 0 ) { checked( true, $bill_specific_day, true ); } ?> type="radio" name="qualpay_plan[bill_specific_day]" value="true" />
                         <!-- Monthly -->
                         <span data-show="3" <?php if( $plan_frequency !== 3 ) { echo 'style="display:none;"'; } ?>><?php esc_html_e( 'On the same day each month', 'qualpay' ); ?></span>
                         <!-- Quarterly, Bi-Annually, Annually -->
-                        <span data-show="4,5,6" <?php if( $plan_frequency !== 4 && $plan_frequency !== 5 && $plan_frequency !== 6) { echo 'style="display:none;"'; } ?>><?php esc_html_e( 'Every', 'qualpay' ); ?></span>
+                        <span data-show="4,5,6" <?php if( $plan_frequency !== 4 || $plan_frequency !== 5 || $plan_frequency !== 6) { echo 'style="display:none;"'; } ?>><?php esc_html_e( 'Every', 'qualpay' ); ?></span>
                     </label>
                     <!-- Quarterly -->
                     <select data-show="4" name="qualpay_plan[month_4]" style="width:auto;<?php if( $plan_frequency !== 4 ) { echo 'display:none;'; } ?>">
@@ -197,7 +199,7 @@ if ( isset( $plan_object) && $plan_object ) {
 
 	<tr valign="top">
 		<th>
-			<?php _e( 'Duration', 'qualpay' ); ?>
+			<?php _e( 'Duration', 'qualpay' ); ?> <span style="color:red">*</span>
 		</th>
 		<td>
             <p>
@@ -210,9 +212,9 @@ if ( isset( $plan_object) && $plan_object ) {
                 <label>
                     <input <?php if( $plan_duration > 0) { echo 'checked="checked"'; } ?> type="radio" name="qualpay_plan[duration]" value="limited" />
                     <?php esc_html_e( 'Bill for', 'qualpay' ); ?>
-                    <input type="number"  style="width:auto" name="qualplay_plan[duration_value]" value="<?php echo $plan_duration; ?>" />
-                    <span data-show="0,1,3,4,5"><?php esc_html_e( 'billing cycle(s)', 'qualpay' ); ?></span>
-                    <span data-show="6"><?php esc_html_e( 'year(s)', 'qualpay' ); ?></span>
+                    <input type="number"  style="width:auto" name="qualpay_plan[duration_value]" value="<?php echo $plan_duration; ?>" />
+                    <span data-show="0,1,3,4,5" <?php if( $plan_frequency === 6 || $plan_frequency === 7) { echo 'style="display:none;"'; } ?>><?php esc_html_e( 'billing cycle(s)', 'qualpay' ); ?></span>
+                    <span data-show="6" <?php if( $plan_frequency !== 6) { echo 'style="display:none;"'; } ?>><?php esc_html_e( 'year(s)', 'qualpay' ); ?></span>
                 </label>
             </p>
 		</td>
@@ -230,22 +232,37 @@ if ( isset( $plan_object) && $plan_object ) {
 			<?php _e( 'Trial Period', 'qualpay' ); ?>
         </th>
         <td class="qualpay_trials">
-            <input <?php if( $trial_duration > 0 ) { echo 'checked="checked"'; } ?>  type="checkbox" value="true" name="qualpay_plan[qualpay_plan_trial]" />
+            <input <?php if( $trial_duration > 0 ) { echo 'checked="checked"'; } ?>  type="checkbox" value="true" name="qualpay_plan[qualpay_plan_trial]" id="qualpay_plan_trial" />
             <table class="form-table" <?php if( $trial_duration === 0 ) { echo 'style="display:none;"'; } ?>>
                 <tr>
                     <th>
                         <label for="qualpay_trial_amount"><?php _e( 'Amount', 'qualpay' ); ?></label>
                     </th>
                     <td>
-                        <input id="qualpay_trial_amount" type="number" name="qualpay_plan[amt_trial]" value="<?php echo $amt_trial; ?>" size="5" />
+                        <input id="qualpay_trial_amount" step="0.01" type="number" name="qualpay_plan[amt_trial]" value="<?php echo $amt_trial; ?>" />
                     </td>
                 </tr>
                 <tr>
                     <th>
-                        <label for="qualpay_trial_duration"><?php _e( 'Duration', 'qualpay' ); ?></label>
+                        <label for="qualpay_trial_duration"><?php _e( 'Duration', 'qualpay' ); ?> <span style="color:red">*</span> </label>
                     </th>
                     <td>
-                        <input id="qualpay_trial_duration" type="number" name="qualpay_plan[amt_trial]" value="<?php echo $trial_duration; ?>" size="5" />
+                        <input id="qualpay_trial_duration" type="number" name="qualpay_plan[trial_duration]" value="<?php echo $trial_duration; ?>" />
+                        <span> Billing cycle(s)</span>
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <label for="qualpay_dba_suffix"><?php _e( 'DBA Suffix', 'qualpay' ); ?> <span style="color:red">*</span> </label>
+                    </th>
+                    <td>
+                    <select <?php if( $trial_duration > 0 ) {  echo "required"; } ?> name="qualpay_plan[dba_suffix]" id="qualpay_dba_suffix" style="width:auto;">
+                        <option value=""><?php _e( 'Select Option', 'qualpay' ); ?></option>
+                        <option <?php if( $dba_suffix === 'END DSCNT' ) { selected( $dba_suffix, 'END DSCNT', true ); } ?> value="END DSCNT"><?php _e( 'END DSCNT', 'qualpay' ); ?></option>
+                        <option <?php if( $dba_suffix === 'END OFFER' ) { selected( $dba_suffix, 'END OFFER', true ); } ?> value="END OFFER"><?php _e( 'END OFFER', 'qualpay' ); ?></option>
+                        <option <?php if( $dba_suffix === 'END PROMO' ) { selected( $dba_suffix, 'END PROMO', true ); } ?> value="END PROMO"><?php _e( 'END PROMO', 'qualpay' ); ?></option>
+                        <option <?php if( $dba_suffix === 'END TRIAL' ) { selected( $dba_suffix, 'END TRIAL', true ); } ?> value="END TRIAL"><?php _e( 'END TRIAL', 'qualpay' ); ?></option>
+                    </select>
                     </td>
                 </tr>
             </table>

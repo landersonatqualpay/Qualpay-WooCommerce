@@ -3,7 +3,7 @@
     function update_qualplay_form( val ) {
         // Re-check the start date.
         $('#start_date').prop( 'checked', true );
-        $('.qualpay-form [data-show]').each(function(){
+        $('.qualpay-form [data-show]').each(function() {
             var attr = $(this).attr('data-show'),
                 supported = attr.split(',');
             if( -1 === supported.indexOf( val ) ) {
@@ -36,8 +36,12 @@
     function toggle_qualpay_trials( val ) {
         if( val ){
             $('.qualpay_trials .form-table').show();
+            $('[name=qualpay_plan\\[trial_duration\\]]').attr("min", 1);
+            $('[name=qualpay_plan\\[dba_suffix\\]]').attr("required",true);
         } else {
             $('.qualpay_trials .form-table').hide();
+            $('[name=qualpay_plan\\[trial_duration\\]]').removeAttr("min");
+            $('[name=qualpay_plan\\[dba_suffix\\]]').removeAttr("required");
         }
     }
     $(function() {
@@ -74,7 +78,6 @@
     
         $(document).on( 'change', '[name=qualpay_plan\\[bill_specific_day\\]]', function(){
            var specific = $(this).val();
-
             toggle_qualpay_prorate( specific );
         });
 

@@ -1,8 +1,10 @@
 <?php
 
 /**
- * Created by Qualpay.
- * User: Jankee
+ * Created by PhpStorm.
+ * User: igor
+ * Date: 10/05/18
+ * Time: 00:38
  */
 class QualPay_Webhook {
 
@@ -231,7 +233,7 @@ class QualPay_Webhook {
 					//$tran_status = $pg_id_amount->tran_status;
 					//$purchase_id = $pg_id_amount->purchase_id;
 					//$origional_amt_pg_id = $pg_id_amount->amt_tran;
-					//$amt_tran = $data['amt_tran'];
+					$amt_tran = $data['amt_tran'];
 					$purchase_id = $data['purchase_id'];
 					
 					$args = array(
@@ -243,7 +245,8 @@ class QualPay_Webhook {
 					$my_query = new WP_Query( $args ); 
 					$order_id =$my_query->posts[0]->ID;
 					$order = wc_get_order(  $order_id );
-
+					$currency = $order->get_currency();
+					$currencySymbol = get_woocommerce_currency_symbol("USD");
 					//exit;
 					if($order_id == $purchase_id) {
 						if($body_array['event'] == 'qp_manager_void_success') {
@@ -256,25 +259,46 @@ class QualPay_Webhook {
 								$order->update_status('cancelled', __('Order Payment canceled.', 'qualpay'));
 							}
 						} else {
+							$orderTotal = $order->get_total();
 							$pg_id = get_post_meta( $order_id, '_qualpay_pg_id');
 							if(count($pg_id)>1) {
-								$order->add_order_note( __( 'Part of Order Captured from Qualpay Manager.', 'qualpay' ) );
-								$order->update_status('processing', __('Order Payment Captured.', 'qualpay'));
+								if($amt_tran != $orderTotal) {
+									$order->add_order_note( __( 'Partial Order Captured from Qualpay Manager. Amount is '.$currencySymbol.$amt_tran.'.', 'qualpay' ) );
+									$order->update_status('processing', __('Patial Order Payment Captured.', 'qualpay'));
+								} else {
+									$order->add_order_note( __( 'Part of Order Captured from Qualpay Manager.', 'qualpay' ) );
+									$order->update_status('processing', __('Order Payment Captured.', 'qualpay'));
+								}
 							} else {
-								$order->add_order_note( __( 'Order Captured from Qualpay Manager.', 'qualpay' ) );
-								$order->update_status('processing', __('Order Payment Captured.', 'qualpay'));
+								if($amt_tran != $orderTotal) {
+									$order->add_order_note( __( 'Partial Order Captured from Qualpay Manager. Amount is '.$currencySymbol.$amt_tran.'.', 'qualpay' ) );
+									$order->update_status('processing', __('Patial Order Payment Captured.', 'qualpay'));
+								} else {
+									$order->add_order_note( __( 'Order Captured from Qualpay Manager.', 'qualpay' ) );
+									$order->update_status('processing', __('Order Payment Captured.', 'qualpay'));
+								}
 							}
 						}
 					} else {
 						if($body_array['event'] == 'qp_manager_void_success') {
 							$order->add_order_note( __( 'Recurring Product Order canceled from Qualpay Manager.', 'qualpay' ) );
 						} else {
+							$orderTotal = $order->get_total();
 							$pg_id = get_post_meta( $order_id, '_qualpay_pg_id');
 							if(count($pg_id)>1) {
-								$order->add_order_note( __( 'Recurring Product Order Captured from Qualpay Manager.', 'qualpay' ) );
+								if($amt_tran != $orderTotal) {
+									$order->add_order_note( __( 'Partial Recurring Product Order Captured from Qualpay Manager. Amount is '.$currencySymbol.$amt_tran.'.', 'qualpay' ) );
+								} else {
+									$order->add_order_note( __( 'Recurring Product Order Captured from Qualpay Manager.', 'qualpay' ) );
+								}
 							} else {
-								$order->add_order_note( __( 'Recurring Product Order Captured from Qualpay Manager.', 'qualpay' ) );
-								$order->update_status('processing', __('Order Payment Captured.', 'qualpay'));
+								if($amt_tran != $orderTotal) {
+									$order->add_order_note( __( 'Partial Recurring Product Order Captured from Qualpay Manager. Amount is '.$currencySymbol.$amt_tran.'.', 'qualpay' ) );
+									$order->update_status('processing', __('Partial Order Payment Captured.', 'qualpay'));
+								} else {
+									$order->add_order_note( __( 'Recurring Product Order Captured from Qualpay Manager.', 'qualpay' ) );
+									$order->update_status('processing', __('Order Payment Captured.', 'qualpay'));
+								}
 							}
 						}
 					}

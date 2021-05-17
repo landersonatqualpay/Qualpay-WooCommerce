@@ -25,9 +25,7 @@ class Qualpay_Cart {
 		add_action( 'woocommerce_calculated_total', array( $this,'custom_calculated_total' ) , 10, 2 );	
 		// change subtotal for product
 		add_filter( 'woocommerce_cart_item_subtotal', array( $this,'filter_woocommerce_cart_item_subtotal' ), 10, 3 ); 
-		
-	//	add_filter('woocommerce_checkout_update_customer_data', '__return_false' );
-		 
+			 
 	}
 
 	public function filter_woocommerce_cart_item_subtotal( $wc, $cart_item, $cart_item_key ) { 
@@ -60,7 +58,6 @@ class Qualpay_Cart {
 	
 		if ( !WC()->cart->is_empty() ) {
 			foreach($items as $item => $values) {
-			//	echo get_post_meta( 262, '_qualpay', true );
 				if( 'yes' === get_post_meta( $values['product_id'], '_qualpay', true ) ) {
 					if('yes' === get_post_meta( $values['product_id'], '_qualpay_use_plan', true ) ) {
 						$mydata = get_post_meta($values['product_id'] , '_qualpay_plan_data', true); // get price
@@ -76,10 +73,11 @@ class Qualpay_Cart {
 					$cart->cart_contents[$item]['line_subtotal'] = '0';
 					$cart->cart_contents[$item]['line_total'] = '0';
 					$cart->cart_contents[$item]['subtotal'] = '0';
-					
-					$original_name = method_exists( $values['data'], 'get_name' ) ?  $values['data']->post->post_title : $values['data']->post->post_title;
-					$original_price = method_exists( $values['data'], 'get_price' ) ? $values['data']->get_price() : $values['data']->post->post_title;
-					$new_name = $original_name ."(Your first billing of $".$original_price." on your subscription's start date.)";
+					$original_name = method_exists( $values['data'], 'get_name' ) ?  $values['data']->get_name() : $values['data']->post->post_title;
+					$add_name = get_post_meta( $values['product_id'], 'qualpay_amount_data', true );
+					//$original_price = method_exists( $values['data'], 'get_price' ) ? $values['data']->get_price() : $values['data']->post->post_title;
+					$new_name = $original_name." (".$add_name.")";
+					//$new_name = $original_name ."(Your first billing of $".$original_price." on your subscription's start date.)";
 						if( method_exists( $values['data'], 'set_name' ) ) {
 						
 							$values['data']->set_name( $new_name );

@@ -7,10 +7,10 @@
  * Author URI:      https://qualpay.com
  * Text Domain:     qualpay
  * Domain Path:     /languages
- * Version:         3.0.9
+ * Version:         3.1.4
  * WC requires at least: 2.6.14
- * WC tested up to: 3.6.2
- * WP tested up to 5.2
+ * WC tested up to: 4.6.2 
+ * WP tested up to 5.4.4
  * Wp Requires at least : 4.4.0
  * @package         Qualpay
  */
@@ -22,8 +22,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'QUALPAY_PATH', plugin_dir_path( __FILE__ ) );
 define( 'QUALPAY_URL', plugin_dir_url( __FILE__ ) );
 define( 'QUALPAY_FILE', __FILE__ );
-define( 'QUALPAY_VERSION', '3.0.9' );
-define( 'QUALPAY_REQ_WC_VERSION', '2.6.14' );
+define( 'QUALPAY_VERSION', '3.1.4' );
+define( 'QUALPAY_REQ_WC_VERSION', '3.8.1' );
 define( 'QUALPAY_REQ_WCS_VERSION', '2.1.0' );
 define( 'QUALPAY_OPTION_PREFIX', 'qualpay_' );
 
@@ -38,7 +38,7 @@ class Qualpay {
 	protected static $instance = null;
 
 	/** plugin version */
-	const VERSION = '3.0.9';
+	const VERSION = '3.1.4';
 
 	/** plugin text domain */
 	const TEXT_DOMAIN = 'qualpay';
@@ -129,14 +129,13 @@ class Qualpay {
 	 * Wrapper function to check whether WooCommerce and Subscriptions are active.
 	 */
 	public function check_prerequisites() {
-
+		
 		// WC version check. version compare returns -1 if the first version is lower, 0 if they're equal, 1 if the second is higher
 		if ( ! class_exists( 'WooCommerce' ) || version_compare( WC()->version, QUALPAY_REQ_WC_VERSION ) < 0 ) {
 			add_action( 'admin_notices', array( $this, 'wc_admin_notice' ) );
-
 			return false;
 		}
-
+		if (!defined('WC_VERSION')) { define('WC_VERSION', WC()->version); }
 		return true;
 	}
 

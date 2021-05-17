@@ -83,6 +83,7 @@ global $thepostid, $post;
 				4 => __( 'Quarterly', 'qualpay' ),
 				5 => __( 'Bi-Annually', 'qualpay' ),
 				6 => __( 'Annually', 'qualpay' ),
+				7 => __( 'daily', 'qualpay')
 			)
 		) );
 
